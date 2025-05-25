@@ -10,7 +10,6 @@ import 'fart_history_page.dart';
 import 'fart_insight_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -140,9 +139,56 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String soundType = '有声';
-  String smellType = '臭';
+  Future<void> recordMeal(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text("选择餐食类型"),
+        children: ['早饭', '午饭', '晚饭', '零食']
+            .map((s) => SimpleDialogOption(child: Text(s), onPressed: () => Navigator.pop(context, s)))
+            .toList(),
+      ),
+    );
+
+    if (result != null) {
+      final now = DateTime.now();
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('farts')
+          .add({
+        'timestamp': now.toIso8601String(),
+        'type': 'meal',
+        'mealType': result,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('🍽️ 吃饭已记录！')),
+      );
+    }
+  }
+
+  Future<void> recordDrink(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final now = DateTime.now();
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('farts')
+        .add({
+      'timestamp': now.toIso8601String(),
+      'type': 'drink',
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('🥤 喝水已记录！')),
+    );
+  }
   void logout() {
     FirebaseAuth.instance.signOut();
   }
@@ -151,11 +197,34 @@ class _HomePageState extends State<HomePage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    final sound = await showDialog<String>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text("选择声音类型"),
+        children: ['有声', '无声']
+            .map((s) => SimpleDialogOption(child: Text(s), onPressed: () => Navigator.pop(context, s)))
+            .toList(),
+      ),
+    );
+    if (sound == null) return;
+
+    final smell = await showDialog<String>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text("选择气味类型"),
+        children: ['臭', '不臭']
+            .map((s) => SimpleDialogOption(child: Text(s), onPressed: () => Navigator.pop(context, s)))
+            .toList(),
+      ),
+    );
+    if (smell == null) return;
+
     final now = DateTime.now();
     final fart = {
       'timestamp': now.toIso8601String(),
-      'sound': soundType,
-      'smell': smellType,
+      'type': 'fart',
+      'sound': sound,
+      'smell': smell,
     };
 
     try {
@@ -171,6 +240,70 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('记录失败: $e')),
+      );
+    }
+  }
+
+  Future<void> recordPoop(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text("选择大便类型"),
+        children: ['干', '正常', '拉稀']
+            .map((s) => SimpleDialogOption(child: Text(s), onPressed: () => Navigator.pop(context, s)))
+            .toList(),
+      ),
+    );
+
+    if (result != null) {
+      final now = DateTime.now();
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('farts')
+          .add({
+        'timestamp': now.toIso8601String(),
+        'type': 'poop',
+        'consistency': result,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('💩 拉屎已记录！')),
+      );
+    }
+  }
+
+  Future<void> recordPee(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text("选择尿液颜色"),
+        children: ['深色', '正常', '透明']
+            .map((s) => SimpleDialogOption(child: Text(s), onPressed: () => Navigator.pop(context, s)))
+            .toList(),
+      ),
+    );
+
+    if (result != null) {
+      final now = DateTime.now();
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('farts')
+          .add({
+        'timestamp': now.toIso8601String(),
+        'type': 'pee',
+        'color': result,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('💧 尿尿已记录！')),
       );
     }
   }
@@ -220,75 +353,43 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('👋 Hello $email'),
-            const SizedBox(height: 24),
-
-            // 声音选择
-            Row(
+      body: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('声音: '),
-                ToggleButtons(
-                  isSelected: [soundType == '有声', soundType == '无声'],
-                  onPressed: (index) {
-                    setState(() {
-                      soundType = (index == 0) ? '有声' : '无声';
-                    });
-                  },
-                  children: const [
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('有声'),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('无声'),
-                    ),
-                  ],
+                Text('👋 Hello $email'),
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  onPressed: () => recordFart(context),
+                  child: const Text('我刚放了一个屁 💨'),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => recordPoop(context),
+                  child: const Text('我刚拉了一坨屎 💩'),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => recordMeal(context),
+                  child: const Text('我刚吃了一顿饭 🍽️'),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => recordDrink(context),
+                  child: const Text('我刚喝了一杯水 🥤'),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => recordPee(context),
+                  child: const Text('我刚尿了一泡尿 💧'),
                 ),
               ],
             ),
-
-            const SizedBox(height: 16),
-
-            // 气味选择
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('气味: '),
-                ToggleButtons(
-                  isSelected: [smellType == '臭', smellType == '不臭'],
-                  onPressed: (index) {
-                    setState(() {
-                      smellType = (index == 0) ? '臭' : '不臭';
-                    });
-                  },
-                  children: const [
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('臭'),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('不臭'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 30),
-
-            ElevatedButton(
-              onPressed: () => recordFart(context),
-              child: const Text('我刚放了一个屁 💨'),
-            ),
-          ],
+          ),
         ),
       ),
     );

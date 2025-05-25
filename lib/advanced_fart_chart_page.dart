@@ -12,8 +12,9 @@ class AdvancedFartChartPage extends StatefulWidget {
 }
 
 class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
-  String selectedDimension = 'sound'; // 'sound', 'smell', or 'total'
-  String selectedPeriod = 'day'; // 'minute', 'hour', 'day', 'week', 'month'
+
+  String selectedPeriod = 'day';
+  Set<String> selectedTypes = {'fart', 'poop', 'pee', 'meal', 'drink'};
 
   List<String> getDateLabels(DateTime now) {
     switch (selectedPeriod) {
@@ -35,6 +36,22 @@ class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
     }
   }
 
+  final typeNames = {
+    'fart': '放屁',
+    'poop': '拉屎',
+    'pee': '尿尿',
+    'meal': '吃饭',
+    'drink': '喝水'
+  };
+
+  final typeColors = {
+    'fart': Colors.green,
+    'poop': Colors.orange,
+    'pee': Colors.blue,
+    'meal': Colors.purple,
+    'drink': Colors.teal
+  };
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -45,24 +62,31 @@ class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
     final fartRef = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('farts');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('放屁统计分析 📊')),
+      appBar: AppBar(title: const Text('数据统计分析 📊')),
       body: Column(
         children: [
           const SizedBox(height: 12),
-          ToggleButtons(
-            isSelected: [selectedDimension == 'sound', selectedDimension == 'smell', selectedDimension == 'total'],
-            onPressed: (index) {
-              setState(() {
-                selectedDimension = ['sound', 'smell', 'total'][index];
-              });
-            },
-            children: const [
-              Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('按声音')),
-              Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('按气味')),
-              Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('总和')),
-            ],
+
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: typeNames.keys.map((type) {
+              return FilterChip(
+                label: Text('${typeNames[type]}'),
+                selected: selectedTypes.contains(type),
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      selectedTypes.add(type);
+                    } else {
+                      selectedTypes.remove(type);
+                    }
+                  });
+                },
+              );
+            }).toList(),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           DropdownButton<String>(
             value: selectedPeriod,
             onChanged: (value) => setState(() => selectedPeriod = value ?? 'day'),
@@ -74,35 +98,29 @@ class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
               DropdownMenuItem(value: 'month', child: Text('最近6个月')),
             ],
           ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                const Icon(Icons.square, color: Colors.green, size: 12),
-                const SizedBox(width: 4),
-                Text(
-                  selectedDimension == 'sound'
-                      ? '有声'
-                      : selectedDimension == 'smell'
-                          ? '臭'
-                          : '数量',
-                ),
-                const SizedBox(width: 16),
-                if (selectedDimension != 'total') ...[
-                  const Icon(Icons.square, color: Colors.orange, size: 12),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            children: selectedTypes.map((type) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.square, color: typeColors[type], size: 12),
                   const SizedBox(width: 4),
-                  Text(selectedDimension == 'sound' ? '无声' : '不臭'),
+                  Text(typeNames[type] ?? type),
                 ],
-              ],
-            ),
+              );
+            }).toList(),
           ),
           Expanded(
             child: FutureBuilder<QuerySnapshot>(
               future: fartRef.get(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text("没有数据"));
                 }
 
                 final docs = snapshot.data!.docs;
@@ -110,13 +128,17 @@ class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
                 final dateLabels = getDateLabels(now);
 
                 final Map<String, Map<String, int>> dataMap = {
-                  for (var label in dateLabels) label: {"A": 0, "B": 0},
+                  for (var label in dateLabels) label: {for (var type in selectedTypes) type: 0},
+                };
+
+                final Map<String, List<DateTime>> typeTimestamps = {
+                  for (var type in selectedTypes) type: [],
                 };
 
                 for (var doc in docs) {
                   final data = doc.data() as Map<String, dynamic>;
                   final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
-                  if (timestamp == null) continue;
+                  if (timestamp == null || !selectedTypes.contains(data['type'])) continue;
 
                   String label;
                   switch (selectedPeriod) {
@@ -139,45 +161,49 @@ class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
                     default:
                       label = '';
                   }
+
                   if (!dataMap.containsKey(label)) continue;
 
-                  if (selectedDimension == 'sound') {
-                    final value = data['sound'] ?? '未知';
-                    if (value == '有声') {
-                      dataMap[label]!['A'] = (dataMap[label]!['A'] ?? 0) + 1;
-                    } else {
-                      dataMap[label]!['B'] = (dataMap[label]!['B'] ?? 0) + 1;
-                    }
-                  } else if (selectedDimension == 'smell') {
-                    final value = data['smell'] ?? '未知';
-                    if (value == '臭') {
-                      dataMap[label]!['A'] = (dataMap[label]!['A'] ?? 0) + 1;
-                    } else {
-                      dataMap[label]!['B'] = (dataMap[label]!['B'] ?? 0) + 1;
-                    }
-                  } else if (selectedDimension == 'total') {
-                    dataMap[label]!['A'] = (dataMap[label]!['A'] ?? 0) + 1;
+                  dataMap[label]![data['type']] = (dataMap[label]![data['type']] ?? 0) + 1;
+                  typeTimestamps[data['type']]!.add(timestamp);
+                }
+
+                // Example: compute stats per type
+                final Map<String, Map<String, dynamic>> summaryStats = {};
+                for (var type in selectedTypes) {
+                  final times = typeTimestamps[type]!..sort();
+                  final count = times.length;
+                  double avgIntervalMin = 0;
+                  if (count > 1) {
+                    final intervals = [
+                      for (int i = 1; i < times.length; i++)
+                        times[i].difference(times[i - 1]).inMinutes
+                    ];
+                    avgIntervalMin = intervals.reduce((a, b) => a + b) / intervals.length;
                   }
+                  summaryStats[type] = {
+                    'count': count,
+                    'avgIntervalMin': avgIntervalMin,
+                  };
                 }
 
                 final barGroups = <BarChartGroupData>[];
-                final barAColor = Colors.green;
-                final barBColor = Colors.orange;
 
                 for (int i = 0; i < dateLabels.length; i++) {
-                  final date = dateLabels[i];
-                  final a = dataMap[date]!['A']!.toDouble();
-                  final b = dataMap[date]!['B']!.toDouble();
-
-                  final rods = [
-                    BarChartRodData(toY: a, width: 10, borderRadius: BorderRadius.circular(4), color: barAColor),
-                  ];
-
-                  if (selectedDimension != 'total') {
-                    rods.add(BarChartRodData(toY: b, width: 10, borderRadius: BorderRadius.circular(4), color: barBColor));
+                  final label = dateLabels[i];
+                  final rods = <BarChartRodData>[];
+                  int j = 0;
+                  for (var type in selectedTypes) {
+                    final count = (dataMap[label]?[type] ?? 0).toDouble();
+                    rods.add(BarChartRodData(
+                      toY: count,
+                      width: 8,
+                      borderRadius: BorderRadius.circular(2),
+                      color: typeColors[type],
+                    ));
+                    j++;
                   }
-
-                  barGroups.add(BarChartGroupData(x: i, barRods: rods, barsSpace: 6));
+                  barGroups.add(BarChartGroupData(x: i, barRods: rods, barsSpace: 4));
                 }
 
                 return Padding(
@@ -190,13 +216,14 @@ class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
                         leftTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
-                            getTitlesWidget: (value, meta) => Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
+                            interval: 1,
+                            getTitlesWidget: (value, _) => Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
                           ),
                         ),
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
-                            getTitlesWidget: (value, meta) {
+                            getTitlesWidget: (value, _) {
                               final i = value.toInt();
                               if (i >= 0 && i < dateLabels.length) {
                                 return Padding(
@@ -213,10 +240,10 @@ class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
                       ),
                       gridData: FlGridData(show: true),
                       borderData: FlBorderData(show: false),
-                      groupsSpace: 12,
+                      groupsSpace: 16,
                       alignment: BarChartAlignment.spaceAround,
                       maxY: barGroups
-                              .map((e) => e.barRods.map((r) => r.toY).reduce((a, b) => a > b ? a : b))
+                              .expand((g) => g.barRods.map((r) => r.toY))
                               .fold(0.0, (a, b) => a > b ? a : b) +
                           1,
                     ),

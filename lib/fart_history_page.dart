@@ -12,6 +12,7 @@ class FartHistoryPage extends StatefulWidget {
 class _FartHistoryPageState extends State<FartHistoryPage> {
   final Set<String> selectedIds = {};
   bool selectionMode = false;
+  Set<String> currentFilters = {'fart'};
 
   void toggleSelection(String docId) {
     setState(() {
@@ -58,16 +59,12 @@ class _FartHistoryPageState extends State<FartHistoryPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("放屁历史记录"),
+        title: const Text("历史记录"),
         actions: [
           if (selectionMode)
             IconButton(
               icon: const Icon(Icons.delete),
-              onPressed: selectedIds.isEmpty
-                  ? null
-                  : () {
-                      deleteSelected();
-                    },
+              onPressed: selectedIds.isEmpty ? null : deleteSelected,
               tooltip: '删除选中记录',
             )
           else
@@ -82,57 +79,121 @@ class _FartHistoryPageState extends State<FartHistoryPage> {
             ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: fartsRef.snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return const Center(child: Text("加载失败"));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final fartDocs = snapshot.data!.docs;
-          if (fartDocs.isEmpty) {
-            return const Center(child: Text("暂无记录"));
-          }
-
-          return ListView.builder(
-            itemCount: fartDocs.length,
-            itemBuilder: (context, index) {
-              final doc = fartDocs[index];
-              final data = doc.data() as Map<String, dynamic>;
-              final time = data['timestamp'] ?? '';
-              final sound = data['sound'] ?? '未知';
-              final smell = data['smell'] ?? '未知';
-              final id = doc.id;
-              final isSelected = selectedIds.contains(id);
-
-              return ListTile(
-                leading: selectionMode
-                    ? Checkbox(
-                        value: isSelected,
-                        onChanged: (_) => toggleSelection(id),
-                      )
-                    : const Text("💨", style: TextStyle(fontSize: 24)),
-                title: Text("时间: $time"),
-                subtitle: Text("声音: $sound，气味: $smell"),
-                onLongPress: () {
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ToggleButtons(
+                isSelected: [
+                  currentFilters.contains('fart'),
+                  currentFilters.contains('poop'),
+                  currentFilters.contains('pee'),
+                  currentFilters.contains('meal'),
+                  currentFilters.contains('drink'),
+                ],
+                onPressed: (index) {
                   setState(() {
-                    selectionMode = true;
-                    toggleSelection(id);
+                    final type = ['fart', 'poop', 'pee', 'meal', 'drink'][index];
+                    if (currentFilters.contains(type)) {
+                      currentFilters.remove(type);
+                    } else {
+                      currentFilters.add(type);
+                    }
                   });
                 },
-                onTap: () {
-                  if (selectionMode) {
-                    toggleSelection(id);
-                  }
-                },
-              );
-            },
-          );
-        },
+                children: const [
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("💨 放屁")),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("💩 拉屎")),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("💧 尿尿")),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("🍽️ 吃饭")),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("🥤 喝水")),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: fartsRef.snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(child: Text("加载失败"));
+                }
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final filteredDocs = snapshot.data!.docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return currentFilters.contains(data['type']);
+                }).toList();
+
+                if (filteredDocs.isEmpty) {
+                  return const Center(child: Text("暂无记录"));
+                }
+
+                return ListView.builder(
+                  itemCount: filteredDocs.length,
+                  itemBuilder: (context, index) {
+                    final doc = filteredDocs[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    final time = data['timestamp'] ?? '';
+                    final id = doc.id;
+                    final isSelected = selectedIds.contains(id);
+
+                    String subtitle = '';
+                    String emoji = '📝';
+
+                    switch (data['type']) {
+                      case 'fart':
+                        subtitle = "声音: ${data['sound'] ?? '未知'}，气味: ${data['smell'] ?? '未知'}";
+                        emoji = "💨";
+                        break;
+                      case 'poop':
+                        subtitle = "类型: ${data['consistency'] ?? '未知'}";
+                        emoji = "💩";
+                        break;
+                      case 'pee':
+                        subtitle = "颜色: ${data['color'] ?? '未知'}";
+                        emoji = "💧";
+                        break;
+                      case 'meal':
+                        subtitle = "餐别: ${data['mealType'] ?? '未知'}";
+                        emoji = "🍽️";
+                        break;
+                      case 'drink':
+                        subtitle = "喝了一杯水";
+                        emoji = "🥤";
+                        break;
+                    }
+
+                    return ListTile(
+                      leading: selectionMode
+                          ? Checkbox(
+                              value: isSelected,
+                              onChanged: (_) => toggleSelection(id),
+                            )
+                          : Text(emoji, style: const TextStyle(fontSize: 24)),
+                      title: Text("时间: $time"),
+                      subtitle: Text(subtitle),
+                      onLongPress: () {
+                        setState(() {
+                          selectionMode = true;
+                          toggleSelection(id);
+                        });
+                      },
+                      onTap: () {
+                        if (selectionMode) toggleSelection(id);
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
-} 
+}
