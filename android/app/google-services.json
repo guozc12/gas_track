@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "790286120915",
+    "project_id": "gastrack-3a654",
+    "storage_bucket": "gastrack-3a654.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:790286120915:android:22b5b0795c7ab5f7eae126",
+        "android_client_info": {
+          "package_name": "com.example.gastrack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGG3AYSTXs2i0k0gA3NYF_COzudIuit-Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
