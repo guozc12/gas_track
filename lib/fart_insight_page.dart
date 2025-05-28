@@ -73,6 +73,7 @@ class _FartInsightPageState extends State<FartInsightPage> {
         final docs = snapshot.docs;
         final Map<String, List<DateTime>> timestampsPerType = {};
         final List<String> fullLogs = [];
+        final Set<String> coveredDays = {};
 
         for (var doc in docs) {
           final data = doc.data() as Map<String, dynamic>;
@@ -80,6 +81,7 @@ class _FartInsightPageState extends State<FartInsightPage> {
           if (timestamp == null || !data.containsKey('type')) continue;
           final type = data['type'];
           timestampsPerType.putIfAbsent(type, () => []).add(timestamp);
+          coveredDays.add(DateFormat('yyyy-MM-dd').format(timestamp));
           final fieldDetails = data.entries
               .where((e) => e.key != 'timestamp' && e.key != 'type')
               .map((e) => '${e.key}: ${e.value}')
@@ -105,6 +107,17 @@ class _FartInsightPageState extends State<FartInsightPage> {
           summaryLines.add('▶️ $name 共计 $count 次，平均间隔 ${avgIntervalMin.toStringAsFixed(1)} 分钟');
         });
 
+        summaryLines.add('\n📅 每日记录覆盖情况：');
+        for (int i = 6; i >= 0; i--) {
+          final date = now.subtract(Duration(days: i));
+          final label = DateFormat('MM/dd').format(date);
+          final key = DateFormat('yyyy-MM-dd').format(date);
+          final covered = coveredDays.contains(key);
+          summaryLines.add(' - $label: ${covered ? "✅" : "❌"}');
+        }
+
+        summaryLines.add('\n⚠️ 注意：以上统计可能因用户遗漏记录而不完全，GPT 请结合这一点审慎分析。');
+
         summaryLines.add('\n详细记录如下：');
         summaryLines.addAll(fullLogs);
         summaryLines.add('\n请基于上述不同类型的记录频率与间隔，为用户提供健康与生活方式建议。');
@@ -112,8 +125,8 @@ class _FartInsightPageState extends State<FartInsightPage> {
         final summary = summaryLines.join('\n');
         conversation.add({"role": "user", "content": summary});
         getAiAdvice(conversation);
-                        _controller.clear();
-                        _controller.clear();
+        _controller.clear();
+        _controller.clear();
       });
     }
   }
@@ -161,19 +174,19 @@ class _FartInsightPageState extends State<FartInsightPage> {
                       labelText: '继续与 GPT 对话...'
                     ),
                     onSubmitted: (text) {
-                    if (text.trim().isNotEmpty) {
-                      setState(() {
-                        _loading = true;
-                        conversation.add({"role": "user", "content": text.trim()});
-                        _controller.clear();
-                      });
-                      getAiAdvice(conversation);
-                    }
-                  },
+                      if (text.trim().isNotEmpty) {
+                        setState(() {
+                          _loading = true;
+                          conversation.add({"role": "user", "content": text.trim()});
+                          _controller.clear();
+                        });
+                        getAiAdvice(conversation);
+                      }
+                    },
                   ),
                 )
               ],
             ),
     );
   }
-}
+} 

@@ -12,16 +12,16 @@ class AdvancedFartChartPage extends StatefulWidget {
 }
 
 class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
-
   String selectedPeriod = 'day';
   Set<String> selectedTypes = {'fart', 'poop', 'pee', 'meal', 'drink'};
 
   List<String> getDateLabels(DateTime now) {
+    final alignedNow = DateTime(now.year, now.month, now.day, now.hour);
     switch (selectedPeriod) {
       case 'minute':
         return List.generate(10, (i) => DateFormat('HH:mm').format(now.subtract(Duration(minutes: 9 - i))));
       case 'hour':
-        return List.generate(12, (i) => DateFormat('HH:00').format(now.subtract(Duration(hours: 11 - i))));
+        return List.generate(24, (i) => DateFormat('yyyy-MM-dd HH:00').format(alignedNow.subtract(Duration(hours: 23 - i))));
       case 'day':
         return List.generate(7, (i) => DateFormat('MM-dd').format(now.subtract(Duration(days: 6 - i))));
       case 'week':
@@ -45,11 +45,11 @@ class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
   };
 
   final typeColors = {
-    'fart': Colors.green,
-    'poop': Colors.orange,
-    'pee': Colors.blue,
-    'meal': Colors.purple,
-    'drink': Colors.teal
+    'fart': Color(0xFF1B9E77),   // colorblind-friendly
+    'poop': Color(0xFFD95F02),   // colorblind-friendly
+    'pee': Color(0xFF7570B3),    // colorblind-friendly
+    'meal': Color(0xFFE7298A),   // colorblind-friendly
+    'drink': Color(0xFF66A61E)   // colorblind-friendly
   };
 
   @override
@@ -92,7 +92,7 @@ class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
             onChanged: (value) => setState(() => selectedPeriod = value ?? 'day'),
             items: const [
               DropdownMenuItem(value: 'minute', child: Text('最近10分钟')),
-              DropdownMenuItem(value: 'hour', child: Text('最近12小时')),
+              DropdownMenuItem(value: 'hour', child: Text('最近24小时')),
               DropdownMenuItem(value: 'day', child: Text('最近7天')),
               DropdownMenuItem(value: 'week', child: Text('最近4周')),
               DropdownMenuItem(value: 'month', child: Text('最近6个月')),
@@ -146,7 +146,8 @@ class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
                       label = DateFormat('HH:mm').format(timestamp);
                       break;
                     case 'hour':
-                      label = DateFormat('HH:00').format(timestamp);
+                      final aligned = DateTime(timestamp.year, timestamp.month, timestamp.day, timestamp.hour);
+                      label = DateFormat('yyyy-MM-dd HH:00').format(aligned);
                       break;
                     case 'day':
                       label = DateFormat('MM-dd').format(timestamp);
@@ -168,7 +169,6 @@ class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
                   typeTimestamps[data['type']]!.add(timestamp);
                 }
 
-                // Example: compute stats per type
                 final Map<String, Map<String, dynamic>> summaryStats = {};
                 for (var type in selectedTypes) {
                   final times = typeTimestamps[type]!..sort();
