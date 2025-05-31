@@ -5,9 +5,9 @@ import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import 'advanced_fart_chart_page.dart';
-import 'fart_history_page.dart';
-import 'fart_insight_page.dart';
+import 'advanced_event_chart_page.dart';
+import 'event_history_page.dart';
+import 'event_insight_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 void main() async {
@@ -15,16 +15,16 @@ void main() async {
   await Firebase.initializeApp(
     options: firebaseWebOptions,
   );
-  runApp(const GasTrackApp());
+  runApp(const LifeTrackerApp());
 }
 
-class GasTrackApp extends StatelessWidget {
-  const GasTrackApp({super.key});
+class LifeTrackerApp extends StatelessWidget {
+  const LifeTrackerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'GasTrack',
+      title: 'LifeTracker',
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
@@ -314,7 +314,7 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('GasTrack'),
+        title: const Text('LifeTracker'),
         actions: [
           IconButton(
             icon: const Icon(Icons.insights),
@@ -322,7 +322,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const FartInsightPage()),
+                MaterialPageRoute(builder: (_) => const EventInsightPage()),
               );
             },
           ),
@@ -330,7 +330,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AdvancedFartChartPage()),
+                MaterialPageRoute(builder: (_) => const AdvancedEventChartPage()),
               );
             },
             icon: const Icon(Icons.stacked_bar_chart),
@@ -340,7 +340,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const FartHistoryPage()),
+                MaterialPageRoute(builder: (context) => const EventHistoryPage()),
               );
             },
             icon: const Icon(Icons.history),

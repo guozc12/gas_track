@@ -5,14 +5,14 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class FartInsightPage extends StatefulWidget {
-  const FartInsightPage({super.key});
+class EventInsightPage extends StatefulWidget {
+  const EventInsightPage({super.key});
 
   @override
-  State<FartInsightPage> createState() => _FartInsightPageState();
+  State<EventInsightPage> createState() => _EventInsightPageState();
 }
 
-class _FartInsightPageState extends State<FartInsightPage> {
+class _EventInsightPageState extends State<EventInsightPage> {
   final TextEditingController _controller = TextEditingController();
   final List<Map<String, String>> conversation = [];
   bool _loading = true;

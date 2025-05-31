@@ -4,14 +4,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
-class AdvancedFartChartPage extends StatefulWidget {
-  const AdvancedFartChartPage({super.key});
+class AdvancedEventChartPage extends StatefulWidget {
+  const AdvancedEventChartPage({super.key});
 
   @override
-  State<AdvancedFartChartPage> createState() => _AdvancedFartChartPageState();
+  State<AdvancedEventChartPage> createState() => _AdvancedEventChartPageState();
 }
 
-class _AdvancedFartChartPageState extends State<AdvancedFartChartPage> {
+class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
   String selectedPeriod = 'day';
   Set<String> selectedTypes = {'fart', 'poop', 'pee', 'meal', 'drink'};
 
