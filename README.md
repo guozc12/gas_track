@@ -1,59 +1,53 @@
-# LifeTracker
+# 生活追踪 LifeTracker
 
-LifeTracker is a playful and insightful Flutter app designed to help users track daily health-related activities, including meals, drinks, and digestive events (like farts, poops, and pees). The app leverages Firebase for authentication and data storage, and provides data visualization and AI-powered health insights.
+生活追踪（LifeTracker）是一款用 Flutter 开发的多平台健康生活记录应用，支持记录饮食、喝水、放屁、拉屎、尿尿等日常事件，并通过 Firebase 云端存储和 AI 提供健康分析。支持多语言（含中文）。
 
-## Features
+LifeTracker is a cross-platform health tracking app built with Flutter. It helps users log daily events (meals, drinks, farts, poops, pees), stores data in Firebase, and provides AI-powered health insights. Multi-language supported (including Chinese).
 
-- **User Authentication**: Sign in with email/password or Google account (via Firebase Auth).
-- **Activity Logging**: Record events such as:
-  - Fart (with sound and smell details)
-  - Poop (with consistency)
-  - Pee (with color)
-  - Meal (with meal type)
-  - Drink (water intake)
-- **History View**: Browse, filter, and delete your past records.
-- **Advanced Charts**: Visualize your activity data over time with customizable, colorblind-friendly charts.
-- **AI Insights**: Get weekly summaries and health advice powered by GPT, based on your logged data.
-- **Multi-Platform**: Runs on Android, iOS, Web, Windows, macOS, and Linux.
+## 主要功能 Features
+- 用户认证（邮箱/Google 登录）
+- 记录饮食、喝水、放屁、拉屎、尿尿等事件
+- 历史记录浏览、筛选与删除
+- 数据可视化（fl_chart 图表，色盲友好）
+- AI 健康分析与建议（GPT 驱动）
+- 多平台支持：Android、iOS、Web、Windows、macOS、Linux
+- 多语言支持（中/英/日/韩/法/德/西/荷）
 
-## Screenshots
-<!-- Add screenshots here if available -->
-
-## Getting Started
-
-1. **Clone the repository:**
+## 安装与运行 Getting Started
+1. 克隆仓库 Clone the repo:
    ```bash
    git clone <repo-url>
-   cd life_tracker
+   cd gas_track
    ```
-2. **Install dependencies:**
+2. 安装依赖 Install dependencies:
    ```bash
    flutter pub get
    ```
-3. **Set up Firebase:**
-   - Create a Firebase project and add your app (Android/iOS/Web/etc.).
-   - Download the configuration files and place them as required (see `firebase_options.dart`).
-   - Enable Email/Password and Google authentication in Firebase Console.
-4. **Run the app:**
+3. 配置 Firebase（需在 Firebase 控制台创建项目，下载配置文件，参考 `firebase_options.dart`）
+   Set up Firebase (create project, download config files, see `firebase_options.dart`)
+4. 运行 Run the app:
    ```bash
    flutter run
    ```
 
-## Main Dependencies
+## 主要依赖 Main Dependencies
 - [Flutter](https://flutter.dev/)
 - [Firebase Core, Auth, Firestore](https://firebase.flutter.dev/)
 - [fl_chart](https://pub.dev/packages/fl_chart)
 - [intl](https://pub.dev/packages/intl)
 - [google_sign_in](https://pub.dev/packages/google_sign_in)
+- [provider](https://pub.dev/packages/provider)
 
-## Project Structure
-- `lib/main.dart` — App entry point, authentication, and navigation
-- `lib/advanced_fart_chart_page.dart` — Advanced data visualization
-- `lib/fart_history_page.dart` — History and record management
-- `lib/fart_insight_page.dart` — AI-powered insights and summaries
+## 目录结构 Project Structure
+- `lib/main.dart` — 应用入口、认证与导航 App entry, auth, navigation
+- `lib/advanced_event_chart_page.dart` — 数据可视化 Data visualization
+- `lib/event_history_page.dart` — 历史记录 History management
+- `lib/event_insight_page.dart` — AI 健康分析 AI insights
+- `lib/l10n/` — 多语言本地化 Localization
 
-## Contributing
-Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+## 贡献 Contributing
+欢迎 PR，重大更改请先提 issue 讨论。
+Pull requests are welcome! For major changes, please open an issue first.
 
-## License
+## 许可证 License
 [MIT](LICENSE)
