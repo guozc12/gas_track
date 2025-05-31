@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:life_tracker/generated/app_localizations.dart';
 
 class AdvancedEventChartPage extends StatefulWidget {
   const AdvancedEventChartPage({super.key});
@@ -117,12 +118,12 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
     }
   }
 
-  final typeNames = {
-    'fart': '放屁',
-    'poop': '拉屎',
-    'pee': '尿尿',
-    'meal': '吃饭',
-    'drink': '喝水'
+  Map<String, String> getTypeNames(BuildContext context) => {
+    'fart': AppLocalizations.of(context)!.fart,
+    'poop': AppLocalizations.of(context)!.poop,
+    'pee': AppLocalizations.of(context)!.pee,
+    'meal': AppLocalizations.of(context)!.meal,
+    'drink': AppLocalizations.of(context)!.drink,
   };
 
   final typeColors = {
@@ -183,10 +184,10 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
       builder: (context) {
         return AlertDialog(
           title: Text(selectedPeriod == 'week'
-              ? '选择周'
+              ? AppLocalizations.of(context)!.selectWeek
               : selectedPeriod == 'month'
-                  ? '选择月份'
-                  : '选择年份'),
+                  ? AppLocalizations.of(context)!.selectMonth
+                  : AppLocalizations.of(context)!.selectYear),
           content: SizedBox(
             width: 300,
             height: 350,
@@ -231,7 +232,7 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
     final fartRef = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('farts');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('数据统计分析 📊')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.statistics)),
       body: FutureBuilder<QuerySnapshot>(
         future: fartRef.get(),
         builder: (context, snapshot) {
@@ -253,9 +254,9 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
-                children: typeNames.keys.map((type) {
+                children: getTypeNames(context).keys.map((type) {
                   return FilterChip(
-                    label: Text('${typeNames[type]}'),
+                    label: Text('${getTypeNames(context)[type]}'),
                     selected: selectedTypes.contains(type),
                     onSelected: (selected) {
                       setState(() {
@@ -281,11 +282,11 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
                   }
                   selectedPeriodIndex = 0;
                 }),
-                items: const [
-                  DropdownMenuItem(value: 'hour', child: Text('按天')),
-                  DropdownMenuItem(value: 'week', child: Text('按周')),
-                  DropdownMenuItem(value: 'month', child: Text('按月')),
-                  DropdownMenuItem(value: 'year', child: Text('按年')),
+                items: [
+                  DropdownMenuItem(value: 'hour', child: Text(AppLocalizations.of(context)!.byDay)),
+                  DropdownMenuItem(value: 'week', child: Text(AppLocalizations.of(context)!.byWeek)),
+                  DropdownMenuItem(value: 'month', child: Text(AppLocalizations.of(context)!.byMonth)),
+                  DropdownMenuItem(value: 'year', child: Text(AppLocalizations.of(context)!.byYear)),
                 ],
               ),
               if (availablePeriods.isNotEmpty)
@@ -297,12 +298,12 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
                       ElevatedButton(
                         onPressed: () => pickPeriodAndSetIndex(context),
                         child: Text(selectedPeriod == 'hour'
-                            ? '选择日期'
+                            ? AppLocalizations.of(context)!.selectDate
                             : selectedPeriod == 'week'
-                                ? '选择周'
+                                ? AppLocalizations.of(context)!.selectWeek
                                 : selectedPeriod == 'month'
-                                    ? '选择月份'
-                                    : '选择年份'),
+                                    ? AppLocalizations.of(context)!.selectMonth
+                                    : AppLocalizations.of(context)!.selectYear),
                       ),
                       const SizedBox(width: 16),
                       Text(
@@ -320,7 +321,7 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
                     children: [
                       Icon(Icons.square, color: typeColors[type], size: 12),
                       const SizedBox(width: 4),
-                      Text(typeNames[type] ?? type),
+                      Text(getTypeNames(context)[type] ?? type),
                     ],
                   );
                 }).toList(),
@@ -415,7 +416,7 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text('该日无数据', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                              Text(AppLocalizations.of(context)!.noDataForDay, style: const TextStyle(fontSize: 16, color: Colors.grey)),
                               SizedBox(height: 16),
                               SizedBox(
                                 height: 200,
@@ -471,7 +472,15 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
                           }
                           return BarChartGroupData(x: i, barRods: rods, barsSpace: 4);
                         });
-                        const weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+                        final weekDays = [
+                          AppLocalizations.of(context)!.monday,
+                          AppLocalizations.of(context)!.tuesday,
+                          AppLocalizations.of(context)!.wednesday,
+                          AppLocalizations.of(context)!.thursday,
+                          AppLocalizations.of(context)!.friday,
+                          AppLocalizations.of(context)!.saturday,
+                          AppLocalizations.of(context)!.sunday,
+                        ];
                         return BarChart(
                           BarChartData(
                             barGroups: barGroups,
@@ -492,7 +501,7 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
                                     if (i >= 0 && i < 7) {
                                       return Padding(
                                         padding: const EdgeInsets.only(top: 4.0),
-                                        child: Text('周${weekDays[i]}', style: const TextStyle(fontSize: 10)),
+                                        child: Text(weekDays[i], style: const TextStyle(fontSize: 10)),
                                       );
                                     }
                                     return const SizedBox.shrink();
@@ -549,7 +558,16 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
                                 sideTitles: SideTitles(
                                   showTitles: true,
                                   interval: 1,
-                                  getTitlesWidget: (value, _) => Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
+                                  getTitlesWidget: (value, _) {
+                                    final i = value.toInt();
+                                    if (i >= 0 && i < 5) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 4.0),
+                                        child: Text(AppLocalizations.of(context)!.weekOf(i + 1), style: const TextStyle(fontSize: 10)),
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  },
                                 ),
                               ),
                               bottomTitles: AxisTitles(
@@ -620,9 +638,23 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
                                   getTitlesWidget: (value, _) {
                                     final i = value.toInt();
                                     if (i >= 0 && i < 12) {
+                                      final monthLabels = [
+                                        AppLocalizations.of(context)!.month1,
+                                        AppLocalizations.of(context)!.month2,
+                                        AppLocalizations.of(context)!.month3,
+                                        AppLocalizations.of(context)!.month4,
+                                        AppLocalizations.of(context)!.month5,
+                                        AppLocalizations.of(context)!.month6,
+                                        AppLocalizations.of(context)!.month7,
+                                        AppLocalizations.of(context)!.month8,
+                                        AppLocalizations.of(context)!.month9,
+                                        AppLocalizations.of(context)!.month10,
+                                        AppLocalizations.of(context)!.month11,
+                                        AppLocalizations.of(context)!.month12,
+                                      ];
                                       return Padding(
                                         padding: const EdgeInsets.only(top: 4.0),
-                                        child: Text('${i + 1}月', style: const TextStyle(fontSize: 10)),
+                                        child: Text(monthLabels[i], style: const TextStyle(fontSize: 10)),
                                       );
                                     }
                                     return const SizedBox.shrink();
