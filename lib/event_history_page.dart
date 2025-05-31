@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:life_tracker/generated/app_localizations.dart';
 
 class EventHistoryPage extends StatefulWidget {
   const EventHistoryPage({super.key});
@@ -60,15 +61,32 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    final messenger = ScaffoldMessenger.of(context);
+    final localizations = AppLocalizations.of(context)!;
+
     String type = initialData?['type'] ?? 'fart';
     DateTime timestamp = initialData != null && initialData['timestamp'] != null
         ? DateTime.tryParse(initialData['timestamp']) ?? DateTime.now()
         : DateTime.now();
-    String sound = initialData?['sound'] ?? '有声';
-    String smell = initialData?['smell'] ?? '臭';
-    String consistency = initialData?['consistency'] ?? '正常';
-    String color = initialData?['color'] ?? '正常';
-    String mealType = initialData?['mealType'] ?? '早饭';
+    String sound = initialData?['sound'] ?? 'loud';
+    if (sound == '有声') sound = 'loud';
+    if (sound == '无声') sound = 'silent';
+    String smell = initialData?['smell'] ?? 'stinky';
+    if (smell == '臭') smell = 'stinky';
+    if (smell == '不臭') smell = 'notStinky';
+    String consistency = initialData?['consistency'] ?? 'normal';
+    if (consistency == '正常') consistency = 'normal';
+    if (consistency == '干') consistency = 'dry';
+    if (consistency == '拉稀') consistency = 'loose';
+    String color = initialData?['color'] ?? 'normal';
+    if (color == '正常') color = 'normal';
+    if (color == '深色') color = 'dark';
+    if (color == '透明') color = 'transparent';
+    String mealType = initialData?['mealType'] ?? 'earlyMeal';
+    if (mealType == '早饭') mealType = 'earlyMeal';
+    if (mealType == '午饭') mealType = 'lunch';
+    if (mealType == '晚饭') mealType = 'dinner';
+    if (mealType == '零食') mealType = 'snack';
 
     await showDialog(
       context: context,
@@ -76,7 +94,7 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text(docId == null ? '添加事件' : '编辑事件'),
+              title: Text(docId == null ? localizations.addEvent : localizations.editEvent),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -84,17 +102,17 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
                     DropdownButton<String>(
                       value: type,
                       onChanged: (v) => setState(() => type = v ?? 'fart'),
-                      items: const [
-                        DropdownMenuItem(value: 'fart', child: Text('💨 放屁')),
-                        DropdownMenuItem(value: 'poop', child: Text('💩 拉屎')),
-                        DropdownMenuItem(value: 'pee', child: Text('💧 尿尿')),
-                        DropdownMenuItem(value: 'meal', child: Text('🍽️ 吃饭')),
-                        DropdownMenuItem(value: 'drink', child: Text('🥤 喝水')),
+                      items: [
+                        DropdownMenuItem(value: 'fart', child: Text('💨 ' + AppLocalizations.of(context)!.fart)),
+                        DropdownMenuItem(value: 'poop', child: Text('💩 ' + AppLocalizations.of(context)!.poop)),
+                        DropdownMenuItem(value: 'pee', child: Text('💧 ' + AppLocalizations.of(context)!.pee)),
+                        DropdownMenuItem(value: 'meal', child: Text('🍽️ ' + AppLocalizations.of(context)!.meal)),
+                        DropdownMenuItem(value: 'drink', child: Text('🥤 ' + AppLocalizations.of(context)!.drink)),
                       ],
                     ),
                     const SizedBox(height: 8),
                     ListTile(
-                      title: Text('时间: ${timestamp.toString().substring(0, 16)}'),
+                      title: Text(localizations.time + ': ${timestamp.toString().substring(0, 16)}'),
                       trailing: Icon(Icons.calendar_today),
                       onTap: () async {
                         final picked = await showDatePicker(
@@ -119,49 +137,49 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
                     if (type == 'fart') ...[
                       DropdownButton<String>(
                         value: sound,
-                        onChanged: (v) => setState(() => sound = v ?? '有声'),
-                        items: const [
-                          DropdownMenuItem(value: '有声', child: Text('有声')),
-                          DropdownMenuItem(value: '无声', child: Text('无声')),
+                        onChanged: (v) => setState(() => sound = v ?? 'loud'),
+                        items: [
+                          DropdownMenuItem(value: 'loud', child: Text(AppLocalizations.of(context)!.loud)),
+                          DropdownMenuItem(value: 'silent', child: Text(AppLocalizations.of(context)!.silent)),
                         ],
                       ),
                       DropdownButton<String>(
                         value: smell,
-                        onChanged: (v) => setState(() => smell = v ?? '臭'),
-                        items: const [
-                          DropdownMenuItem(value: '臭', child: Text('臭')),
-                          DropdownMenuItem(value: '不臭', child: Text('不臭')),
+                        onChanged: (v) => setState(() => smell = v ?? 'stinky'),
+                        items: [
+                          DropdownMenuItem(value: 'stinky', child: Text(AppLocalizations.of(context)!.stinky)),
+                          DropdownMenuItem(value: 'notStinky', child: Text(AppLocalizations.of(context)!.notStinky)),
                         ],
                       ),
                     ] else if (type == 'poop') ...[
                       DropdownButton<String>(
                         value: consistency,
-                        onChanged: (v) => setState(() => consistency = v ?? '正常'),
-                        items: const [
-                          DropdownMenuItem(value: '干', child: Text('干')),
-                          DropdownMenuItem(value: '正常', child: Text('正常')),
-                          DropdownMenuItem(value: '拉稀', child: Text('拉稀')),
+                        onChanged: (v) => setState(() => consistency = v ?? 'normal'),
+                        items: [
+                          DropdownMenuItem(value: 'dry', child: Text(AppLocalizations.of(context)!.dry)),
+                          DropdownMenuItem(value: 'normal', child: Text(AppLocalizations.of(context)!.normal)),
+                          DropdownMenuItem(value: 'loose', child: Text(AppLocalizations.of(context)!.loose)),
                         ],
                       ),
                     ] else if (type == 'pee') ...[
                       DropdownButton<String>(
                         value: color,
-                        onChanged: (v) => setState(() => color = v ?? '正常'),
-                        items: const [
-                          DropdownMenuItem(value: '深色', child: Text('深色')),
-                          DropdownMenuItem(value: '正常', child: Text('正常')),
-                          DropdownMenuItem(value: '透明', child: Text('透明')),
+                        onChanged: (v) => setState(() => color = v ?? 'normal'),
+                        items: [
+                          DropdownMenuItem(value: 'dark', child: Text(AppLocalizations.of(context)!.dark)),
+                          DropdownMenuItem(value: 'normal', child: Text(AppLocalizations.of(context)!.normal)),
+                          DropdownMenuItem(value: 'transparent', child: Text(AppLocalizations.of(context)!.transparent)),
                         ],
                       ),
                     ] else if (type == 'meal') ...[
                       DropdownButton<String>(
                         value: mealType,
-                        onChanged: (v) => setState(() => mealType = v ?? '早饭'),
-                        items: const [
-                          DropdownMenuItem(value: '早饭', child: Text('早饭')),
-                          DropdownMenuItem(value: '午饭', child: Text('午饭')),
-                          DropdownMenuItem(value: '晚饭', child: Text('晚饭')),
-                          DropdownMenuItem(value: '零食', child: Text('零食')),
+                        onChanged: (v) => setState(() => mealType = v ?? 'earlyMeal'),
+                        items: [
+                          DropdownMenuItem(value: 'earlyMeal', child: Text(AppLocalizations.of(context)!.earlyMeal)),
+                          DropdownMenuItem(value: 'lunch', child: Text(AppLocalizations.of(context)!.lunch)),
+                          DropdownMenuItem(value: 'dinner', child: Text(AppLocalizations.of(context)!.dinner)),
+                          DropdownMenuItem(value: 'snack', child: Text(AppLocalizations.of(context)!.snack)),
                         ],
                       ),
                     ],
@@ -171,7 +189,7 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('取消'),
+                  child: Text(localizations.cancel),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -203,9 +221,10 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
                           .doc(docId)
                           .update(data);
                     }
-                    if (context.mounted) Navigator.pop(context);
+                    if (!mounted) return;
+                    Navigator.pop(context);
                   },
-                  child: Text(docId == null ? '添加' : '保存'),
+                  child: Text(docId == null ? localizations.add : localizations.save),
                 ),
               ],
             );
@@ -213,6 +232,7 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
         );
       },
     );
+    if (!mounted) return;
   }
 
   @override
@@ -230,14 +250,14 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("历史记录"),
+        title: Text(AppLocalizations.of(context)!.history),
         actions: [
           if (selectionMode)
             Builder(
               builder: (context) {
                 return IconButton(
                   icon: const Icon(Icons.select_all),
-                  tooltip: selectedIds.isNotEmpty ? '取消全选' : '全选',
+                  tooltip: selectedIds.isNotEmpty ? AppLocalizations.of(context)!.cancelSelectAll : AppLocalizations.of(context)!.selectAll,
                   onPressed: () {
                     final state = context.findAncestorStateOfType<_EventHistoryPageState>();
                     if (state != null) {
@@ -252,7 +272,7 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: selectedIds.isEmpty ? null : deleteSelected,
-              tooltip: '删除选中记录',
+              tooltip: AppLocalizations.of(context)!.deleteSelected,
             )
           else
             IconButton(
@@ -262,7 +282,7 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
                   selectionMode = true;
                 });
               },
-              tooltip: '进入选择模式',
+              tooltip: AppLocalizations.of(context)!.enterSelectionMode,
             ),
         ],
       ),
@@ -290,12 +310,12 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
                     }
                   });
                 },
-                children: const [
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("💨 放屁")),
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("💩 拉屎")),
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("💧 尿尿")),
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("🍽️ 吃饭")),
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("🥤 喝水")),
+                children: [
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("💨 " + AppLocalizations.of(context)!.fart)),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("💩 " + AppLocalizations.of(context)!.poop)),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("💧 " + AppLocalizations.of(context)!.pee)),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("🍽️ " + AppLocalizations.of(context)!.meal)),
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text("🥤 " + AppLocalizations.of(context)!.drink)),
                 ],
               ),
             ),
@@ -335,23 +355,104 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
 
                     switch (data['type']) {
                       case 'fart':
-                        subtitle = "声音: ${data['sound'] ?? '未知'}，气味: ${data['smell'] ?? '未知'}";
+                        String soundLabel = '';
+                        switch (data['sound']) {
+                          case 'loud':
+                          case '有声':
+                            soundLabel = AppLocalizations.of(context)!.loud;
+                            break;
+                          case 'silent':
+                          case '无声':
+                            soundLabel = AppLocalizations.of(context)!.silent;
+                            break;
+                          default:
+                            soundLabel = data['sound'] ?? AppLocalizations.of(context)!.unknownValue;
+                        }
+                        String smellLabel = '';
+                        switch (data['smell']) {
+                          case 'stinky':
+                          case '臭':
+                            smellLabel = AppLocalizations.of(context)!.stinky;
+                            break;
+                          case 'notStinky':
+                          case '不臭':
+                            smellLabel = AppLocalizations.of(context)!.notStinky;
+                            break;
+                          default:
+                            smellLabel = data['smell'] ?? AppLocalizations.of(context)!.unknownValue;
+                        }
+                        subtitle = AppLocalizations.of(context)!.sound + ': ' + soundLabel + '，' + AppLocalizations.of(context)!.smell + ': ' + smellLabel;
                         emoji = "💨";
                         break;
                       case 'poop':
-                        subtitle = "类型: ${data['consistency'] ?? '未知'}";
+                        String consistencyLabel = '';
+                        switch (data['consistency']) {
+                          case 'normal':
+                          case '正常':
+                            consistencyLabel = AppLocalizations.of(context)!.normal;
+                            break;
+                          case 'dry':
+                          case '干':
+                            consistencyLabel = AppLocalizations.of(context)!.dry;
+                            break;
+                          case 'loose':
+                          case '拉稀':
+                            consistencyLabel = AppLocalizations.of(context)!.loose;
+                            break;
+                          default:
+                            consistencyLabel = data['consistency'] ?? AppLocalizations.of(context)!.unknownValue;
+                        }
+                        subtitle = AppLocalizations.of(context)!.consistency + ': ' + consistencyLabel;
                         emoji = "💩";
                         break;
                       case 'pee':
-                        subtitle = "颜色: ${data['color'] ?? '未知'}";
+                        String colorLabel = '';
+                        switch (data['color']) {
+                          case 'normal':
+                          case '正常':
+                            colorLabel = AppLocalizations.of(context)!.normal;
+                            break;
+                          case 'dark':
+                          case '深色':
+                            colorLabel = AppLocalizations.of(context)!.dark;
+                            break;
+                          case 'transparent':
+                          case '透明':
+                            colorLabel = AppLocalizations.of(context)!.transparent;
+                            break;
+                          default:
+                            colorLabel = data['color'] ?? AppLocalizations.of(context)!.unknownValue;
+                        }
+                        subtitle = AppLocalizations.of(context)!.color + ': ' + colorLabel;
                         emoji = "💧";
                         break;
                       case 'meal':
-                        subtitle = "餐别: ${data['mealType'] ?? '未知'}";
+                        String mealTypeLabel = '';
+                        switch (data['mealType']) {
+                          case 'earlyMeal':
+                          case '早饭':
+                            mealTypeLabel = AppLocalizations.of(context)!.earlyMeal;
+                            break;
+                          case 'lunch':
+                          case '午饭':
+                            mealTypeLabel = AppLocalizations.of(context)!.lunch;
+                            break;
+                          case 'dinner':
+                          case '晚饭':
+                            mealTypeLabel = AppLocalizations.of(context)!.dinner;
+                            break;
+                          case 'snack':
+                          case '零食':
+                            mealTypeLabel = AppLocalizations.of(context)!.snack;
+                            break;
+                          default:
+                            mealTypeLabel = data['mealType'] ?? AppLocalizations.of(context)!.unknownValue;
+                        }
+                        subtitle = AppLocalizations.of(context)!.mealType + ': ' + mealTypeLabel;
                         emoji = "🍽️";
                         break;
                       case 'drink':
-                        subtitle = "喝了一杯水";
+                        subtitle = AppLocalizations.of(context)!.drinkedWater;
                         emoji = "🥤";
                         break;
                     }
@@ -363,7 +464,7 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
                               onChanged: (_) => toggleSelection(id),
                             )
                           : Text(emoji, style: const TextStyle(fontSize: 24)),
-                      title: Text("时间: $time"),
+                      title: Text(AppLocalizations.of(context)!.time + ': $time'),
                       subtitle: Text(subtitle),
                       onLongPress: () {
                         setState(() {
@@ -389,7 +490,7 @@ class _EventHistoryPageState extends State<EventHistoryPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => showEventDialog(),
         child: const Icon(Icons.add),
-        tooltip: '添加新事件',
+        tooltip: AppLocalizations.of(context)!.addNewEvent,
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:life_tracker/generated/app_localizations.dart';
 
 class EventInsightPage extends StatefulWidget {
   const EventInsightPage({super.key});
@@ -19,12 +20,12 @@ class _EventInsightPageState extends State<EventInsightPage> {
   bool _loading = true;
   bool _showFullConversation = false;
 
-  final typeNames = {
-    'fart': '放屁',
-    'poop': '拉屎',
-    'pee': '尿尿',
-    'meal': '吃饭',
-    'drink': '喝水'
+  Map<String, String> getTypeNames(BuildContext context) => {
+    'fart': AppLocalizations.of(context)!.fart,
+    'poop': AppLocalizations.of(context)!.poop,
+    'pee': AppLocalizations.of(context)!.pee,
+    'meal': AppLocalizations.of(context)!.meal,
+    'drink': AppLocalizations.of(context)!.drink,
   };
 
   Future<void> getAiAdvice(List<Map<String, String>> messages) async {
@@ -87,12 +88,13 @@ class _EventInsightPageState extends State<EventInsightPage> {
               .where((e) => e.key != 'timestamp' && e.key != 'type')
               .map((e) => '${e.key}: ${e.value}')
               .join(', ');
-          fullLogs.add('${DateFormat('yyyy-MM-dd HH:mm').format(timestamp)} - 类型: ${typeNames[type] ?? type}${fieldDetails.isNotEmpty ? '，' + fieldDetails : ''}');
+          fullLogs.add('${DateFormat('yyyy-MM-dd HH:mm').format(timestamp)} - 类型: ${getTypeNames(context)[type] ?? type}${fieldDetails.isNotEmpty ? '，' + fieldDetails : ''}');
         }
 
         final List<String> summaryLines = [];
-        summaryLines.add('📊 过去一周的记录摘要如下：');
+        summaryLines.add(AppLocalizations.of(context)!.dataSummary);
 
+        final typeNames = getTypeNames(context);
         timestampsPerType.forEach((type, times) {
           times.sort();
           final count = times.length;
@@ -105,23 +107,22 @@ class _EventInsightPageState extends State<EventInsightPage> {
             avgIntervalMin = intervals.reduce((a, b) => a + b) / intervals.length;
           }
           final name = typeNames[type] ?? type;
-          summaryLines.add('▶️ $name 共计 $count 次，平均间隔 ${avgIntervalMin.toStringAsFixed(1)} 分钟');
+          summaryLines.add(AppLocalizations.of(context)!.typeSummary(name, count, avgIntervalMin.toStringAsFixed(1)));
         });
 
-        summaryLines.add('\n📅 每日记录覆盖情况：');
+        summaryLines.add('\n' + AppLocalizations.of(context)!.dailyCoverage);
         for (int i = 6; i >= 0; i--) {
           final date = now.subtract(Duration(days: i));
           final label = DateFormat('MM/dd').format(date);
           final key = DateFormat('yyyy-MM-dd').format(date);
           final covered = coveredDays.contains(key);
-          summaryLines.add(' - $label: ${covered ? "✅" : "❌"}');
+          summaryLines.add(' - $label: ${covered ? AppLocalizations.of(context)!.covered : AppLocalizations.of(context)!.notCovered}');
         }
 
-        summaryLines.add('\n⚠️ 注意：以上统计可能因用户遗漏记录而不完全，GPT 请结合这一点审慎分析。');
-
-        summaryLines.add('\n详细记录如下：');
+        summaryLines.add('\n' + AppLocalizations.of(context)!.aiNotice);
+        summaryLines.add('\n' + AppLocalizations.of(context)!.detailRecords);
         summaryLines.addAll(fullLogs);
-        summaryLines.add('\n请基于上述不同类型的记录频率与间隔，为用户提供健康与生活方式建议。');
+        summaryLines.add('\n' + AppLocalizations.of(context)!.aiRequest);
 
         final summary = summaryLines.join('\n');
         conversation.add({"role": "user", "content": summary});
@@ -140,7 +141,7 @@ class _EventInsightPageState extends State<EventInsightPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('数据统计与 AI 分析 🤖')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.statistics)),
       body: _loading && conversation.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -149,7 +150,7 @@ class _EventInsightPageState extends State<EventInsightPage> {
                   padding: const EdgeInsets.all(16),
                   child: ElevatedButton(
                     onPressed: () => setState(() => _showFullConversation = !_showFullConversation),
-                    child: Text(_showFullConversation ? '隐藏完整对话' : '查看 GPT 完整对话'),
+                    child: Text(_showFullConversation ? AppLocalizations.of(context)!.hideFullConversation : AppLocalizations.of(context)!.viewGPTFullConversation),
                   ),
                 ),
                 Expanded(
@@ -158,7 +159,7 @@ class _EventInsightPageState extends State<EventInsightPage> {
                     itemCount: _showFullConversation ? conversation.length : (conversation.isNotEmpty ? 2 : 0),
                     itemBuilder: (context, index) {
                       final msg = _showFullConversation ? conversation[index] : conversation[conversation.length - 2 + index];
-                      final prefix = msg['role'] == 'user' ? '🧑 用户:' : '🤖 GPT:';
+                      final prefix = msg['role'] == 'user' ? '🧑 ' + AppLocalizations.of(context)!.user + ':' : '🤖 ' + AppLocalizations.of(context)!.assistant + ':';
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Text('$prefix\n${msg['content']}'),
@@ -170,9 +171,9 @@ class _EventInsightPageState extends State<EventInsightPage> {
                   padding: const EdgeInsets.all(16),
                   child: TextField(
                     controller: _controller,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: '继续与 GPT 对话...'
+                      labelText: AppLocalizations.of(context)!.continueGPTConversation
                     ),
                     onSubmitted: (text) {
                       if (text.trim().isNotEmpty) {

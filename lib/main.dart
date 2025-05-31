@@ -10,6 +10,7 @@ import 'event_history_page.dart';
 import 'event_insight_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'generated/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,8 +21,20 @@ void main() async {
   runApp(const LifeTrackerApp());
 }
 
-class LifeTrackerApp extends StatelessWidget {
+class LifeTrackerApp extends StatefulWidget {
   const LifeTrackerApp({super.key});
+  @override
+  State<LifeTrackerApp> createState() => _LifeTrackerAppState();
+}
+
+class _LifeTrackerAppState extends State<LifeTrackerApp> {
+  Locale? _locale;
+
+  void setLocale(Locale locale) {
+    setState(() {
+      _locale = locale;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,13 +44,17 @@ class LifeTrackerApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
       ),
-      home: const AuthGate(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: _locale,
+      home: AuthGate(onLocaleChange: setLocale),
     );
   }
 }
 
 class AuthGate extends StatelessWidget {
-  const AuthGate({super.key});
+  final void Function(Locale)? onLocaleChange;
+  const AuthGate({super.key, this.onLocaleChange});
 
   @override
   Widget build(BuildContext context) {
@@ -48,16 +65,17 @@ class AuthGate extends StatelessWidget {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snapshot.hasData) {
-          return const HomePage();
+          return HomePage(onLocaleChange: onLocaleChange);
         }
-        return const LoginPage();
+        return LoginPage(onLocaleChange: onLocaleChange);
       },
     );
   }
 }
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final void Function(Locale)? onLocaleChange;
+  const LoginPage({super.key, this.onLocaleChange});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -134,7 +152,8 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final void Function(Locale)? onLocaleChange;
+  const HomePage({super.key, this.onLocaleChange});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -320,7 +339,7 @@ class _HomePageState extends State<HomePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.insights),
-            tooltip: 'AI分析',
+            tooltip: AppLocalizations.of(context)!.aiAnalysis,
             onPressed: () {
               Navigator.push(
                 context,
@@ -336,7 +355,7 @@ class _HomePageState extends State<HomePage> {
               );
             },
             icon: const Icon(Icons.stacked_bar_chart),
-            tooltip: '双柱图分析',
+            tooltip: AppLocalizations.of(context)!.statistics,
           ),
           IconButton(
             onPressed: () {
@@ -346,12 +365,52 @@ class _HomePageState extends State<HomePage> {
               );
             },
             icon: const Icon(Icons.history),
-            tooltip: '查看历史记录',
+            tooltip: AppLocalizations.of(context)!.history,
           ),
           IconButton(
             onPressed: logout,
             icon: const Icon(Icons.logout),
-            tooltip: '登出',
+            tooltip: AppLocalizations.of(context)!.logout,
+          ),
+          PopupMenuButton<Locale>(
+            icon: Icon(Icons.language),
+            onSelected: (locale) {
+              if (widget.onLocaleChange != null) widget.onLocaleChange!(locale);
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: Locale('zh'),
+                child: Text('中文'),
+              ),
+              PopupMenuItem(
+                value: Locale('en'),
+                child: Text('English'),
+              ),
+              PopupMenuItem(
+                value: Locale('ja'),
+                child: Text('日本語'),
+              ),
+              PopupMenuItem(
+                value: Locale('es'),
+                child: Text('Español'),
+              ),
+              PopupMenuItem(
+                value: Locale('de'),
+                child: Text('Deutsch'),
+              ),
+              PopupMenuItem(
+                value: Locale('fr'),
+                child: Text('Français'),
+              ),
+              PopupMenuItem(
+                value: Locale('nl'),
+                child: Text('Nederlands'),
+              ),
+              PopupMenuItem(
+                value: Locale('ko'),
+                child: Text('한국어'),
+              ),
+            ],
           ),
         ],
       ),
@@ -367,27 +426,27 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 30),
                 ElevatedButton(
                   onPressed: () => recordFart(context),
-                  child: const Text('我刚放了一个屁 💨'),
+                  child: Text(AppLocalizations.of(context)!.iJustHadAFart),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => recordPoop(context),
-                  child: const Text('我刚拉了一坨屎 💩'),
+                  child: Text(AppLocalizations.of(context)!.iJustHadAPoop),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => recordMeal(context),
-                  child: const Text('我刚吃了一顿饭 🍽️'),
+                  child: Text(AppLocalizations.of(context)!.iJustHadAMeal),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => recordDrink(context),
-                  child: const Text('我刚喝了一杯水 🥤'),
+                  child: Text(AppLocalizations.of(context)!.iJustHadADrink),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => recordPee(context),
-                  child: const Text('我刚尿了一泡尿 💧'),
+                  child: Text(AppLocalizations.of(context)!.iJustHadAPee),
                 ),
               ],
             ),
