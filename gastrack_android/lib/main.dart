@@ -9,9 +9,13 @@ import 'advanced_event_chart_page.dart';
 import 'event_history_page.dart';
 import 'event_insight_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:io';
 
 void main() async {
+  print('Current directory: [32m[1m[4m[7m${Directory.current.path}[0m');
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: "assets/.env");
   await Firebase.initializeApp(
     options: firebaseWebOptions,
   );

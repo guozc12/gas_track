@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EventInsightPage extends StatefulWidget {
   const EventInsightPage({super.key});
@@ -28,7 +29,7 @@ class _EventInsightPageState extends State<EventInsightPage> {
 
   Future<void> getAiAdvice(List<Map<String, String>> messages) async {
     final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
-    final apiKey = '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';
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
 
     final response = await http.post(
       uri,
