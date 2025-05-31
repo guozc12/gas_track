@@ -44,6 +44,165 @@ class _FartHistoryPageState extends State<FartHistoryPage> {
     });
   }
 
+  Future<void> showEventDialog({Map<String, dynamic>? initialData, String? docId}) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    String type = initialData?['type'] ?? 'fart';
+    DateTime timestamp = initialData != null && initialData['timestamp'] != null
+        ? DateTime.tryParse(initialData['timestamp']) ?? DateTime.now()
+        : DateTime.now();
+    String sound = initialData?['sound'] ?? '有声';
+    String smell = initialData?['smell'] ?? '臭';
+    String consistency = initialData?['consistency'] ?? '正常';
+    String color = initialData?['color'] ?? '正常';
+    String mealType = initialData?['mealType'] ?? '早饭';
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(docId == null ? '添加事件' : '编辑事件'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButton<String>(
+                      value: type,
+                      onChanged: (v) => setState(() => type = v ?? 'fart'),
+                      items: const [
+                        DropdownMenuItem(value: 'fart', child: Text('💨 放屁')),
+                        DropdownMenuItem(value: 'poop', child: Text('💩 拉屎')),
+                        DropdownMenuItem(value: 'pee', child: Text('💧 尿尿')),
+                        DropdownMenuItem(value: 'meal', child: Text('🍽️ 吃饭')),
+                        DropdownMenuItem(value: 'drink', child: Text('🥤 喝水')),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      title: Text('时间: ${timestamp.toString().substring(0, 16)}'),
+                      trailing: Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: timestamp,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(timestamp),
+                          );
+                          if (time != null) {
+                            setState(() {
+                              timestamp = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute);
+                            });
+                          }
+                        }
+                      },
+                    ),
+                    if (type == 'fart') ...[
+                      DropdownButton<String>(
+                        value: sound,
+                        onChanged: (v) => setState(() => sound = v ?? '有声'),
+                        items: const [
+                          DropdownMenuItem(value: '有声', child: Text('有声')),
+                          DropdownMenuItem(value: '无声', child: Text('无声')),
+                        ],
+                      ),
+                      DropdownButton<String>(
+                        value: smell,
+                        onChanged: (v) => setState(() => smell = v ?? '臭'),
+                        items: const [
+                          DropdownMenuItem(value: '臭', child: Text('臭')),
+                          DropdownMenuItem(value: '不臭', child: Text('不臭')),
+                        ],
+                      ),
+                    ] else if (type == 'poop') ...[
+                      DropdownButton<String>(
+                        value: consistency,
+                        onChanged: (v) => setState(() => consistency = v ?? '正常'),
+                        items: const [
+                          DropdownMenuItem(value: '干', child: Text('干')),
+                          DropdownMenuItem(value: '正常', child: Text('正常')),
+                          DropdownMenuItem(value: '拉稀', child: Text('拉稀')),
+                        ],
+                      ),
+                    ] else if (type == 'pee') ...[
+                      DropdownButton<String>(
+                        value: color,
+                        onChanged: (v) => setState(() => color = v ?? '正常'),
+                        items: const [
+                          DropdownMenuItem(value: '深色', child: Text('深色')),
+                          DropdownMenuItem(value: '正常', child: Text('正常')),
+                          DropdownMenuItem(value: '透明', child: Text('透明')),
+                        ],
+                      ),
+                    ] else if (type == 'meal') ...[
+                      DropdownButton<String>(
+                        value: mealType,
+                        onChanged: (v) => setState(() => mealType = v ?? '早饭'),
+                        items: const [
+                          DropdownMenuItem(value: '早饭', child: Text('早饭')),
+                          DropdownMenuItem(value: '午饭', child: Text('午饭')),
+                          DropdownMenuItem(value: '晚饭', child: Text('晚饭')),
+                          DropdownMenuItem(value: '零食', child: Text('零食')),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('取消'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final data = <String, dynamic>{
+                      'timestamp': timestamp.toIso8601String(),
+                      'type': type,
+                    };
+                    if (type == 'fart') {
+                      data['sound'] = sound;
+                      data['smell'] = smell;
+                    } else if (type == 'poop') {
+                      data['consistency'] = consistency;
+                    } else if (type == 'pee') {
+                      data['color'] = color;
+                    } else if (type == 'meal') {
+                      data['mealType'] = mealType;
+                    }
+                    if (docId == null) {
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(user.uid)
+                          .collection('farts')
+                          .add(data);
+                    } else {
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(user.uid)
+                          .collection('farts')
+                          .doc(docId)
+                          .update(data);
+                    }
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  child: Text(docId == null ? '添加' : '保存'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -184,7 +343,11 @@ class _FartHistoryPageState extends State<FartHistoryPage> {
                         });
                       },
                       onTap: () {
-                        if (selectionMode) toggleSelection(id);
+                        if (selectionMode) {
+                          toggleSelection(id);
+                        } else {
+                          showEventDialog(initialData: data, docId: id);
+                        }
                       },
                     );
                   },
@@ -193,6 +356,11 @@ class _FartHistoryPageState extends State<FartHistoryPage> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => showEventDialog(),
+        child: const Icon(Icons.add),
+        tooltip: '添加新事件',
       ),
     );
   }
