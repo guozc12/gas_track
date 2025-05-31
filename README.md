@@ -1,6 +1,6 @@
-# GasTrack
+# LifeTracker
 
-GasTrack is a playful and insightful Flutter app designed to help users track daily health-related activities, including meals, drinks, and digestive events (like farts, poops, and pees). The app leverages Firebase for authentication and data storage, and provides data visualization and AI-powered health insights.
+LifeTracker is a playful and insightful Flutter app designed to help users track daily health-related activities, including meals, drinks, and digestive events (like farts, poops, and pees). The app leverages Firebase for authentication and data storage, and provides data visualization and AI-powered health insights.
 
 ## Features
 
@@ -24,7 +24,7 @@ GasTrack is a playful and insightful Flutter app designed to help users track da
 1. **Clone the repository:**
    ```bash
    git clone <repo-url>
-   cd gas_track
+   cd life_tracker
    ```
 2. **Install dependencies:**
    ```bash

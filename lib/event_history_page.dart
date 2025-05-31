@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class FartHistoryPage extends StatefulWidget {
-  const FartHistoryPage({super.key});
+class EventHistoryPage extends StatefulWidget {
+  const EventHistoryPage({super.key});
 
   @override
-  State<FartHistoryPage> createState() => _FartHistoryPageState();
+  State<EventHistoryPage> createState() => _EventHistoryPageState();
 }
 
-class _FartHistoryPageState extends State<FartHistoryPage> {
+class _EventHistoryPageState extends State<EventHistoryPage> {
   final Set<String> selectedIds = {};
   bool selectionMode = false;
   Set<String> currentFilters = {'fart'};
