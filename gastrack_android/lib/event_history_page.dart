@@ -12,7 +12,7 @@ class EventHistoryPage extends StatefulWidget {
 class _EventHistoryPageState extends State<EventHistoryPage> {
   final Set<String> selectedIds = {};
   bool selectionMode = false;
-  Set<String> currentFilters = {'fart'};
+  Set<String> currentFilters = {'fart', 'poop', 'pee', 'meal', 'drink'};
   List<QueryDocumentSnapshot> filteredDocsCache = [];
 
   void toggleSelection(String docId) {
