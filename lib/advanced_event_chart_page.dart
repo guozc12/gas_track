@@ -12,8 +12,10 @@ class AdvancedEventChartPage extends StatefulWidget {
 }
 
 class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
-  String selectedPeriod = 'day';
+  String selectedPeriod = 'hour';
+  int selectedPeriodIndex = 0;
   Set<String> selectedTypes = {'fart', 'poop', 'pee', 'meal', 'drink'};
+  List<String> availablePeriods = [];
 
   List<String> getDateLabels(DateTime now) {
     final alignedNow = DateTime(now.year, now.month, now.day, now.hour);
@@ -36,6 +38,85 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
     }
   }
 
+  // Helper to get all available periods from data
+  List<String> getAvailablePeriods(List<QueryDocumentSnapshot> docs) {
+    switch (selectedPeriod) {
+      case 'hour':
+        final days = docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+          return timestamp != null ? DateFormat('yyyy-MM-dd').format(timestamp) : null;
+        }).whereType<String>().toSet().toList();
+        days.sort((a, b) => b.compareTo(a));
+        return days;
+      case 'week':
+        final weeks = docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+          if (timestamp == null) return null;
+          final weekStart = timestamp.subtract(Duration(days: timestamp.weekday - 1));
+          return '${weekStart.year}-W${getWeekOfYear(weekStart)}';
+        }).whereType<String>().toSet().toList();
+        weeks.sort((a, b) => b.compareTo(a));
+        return weeks;
+      case 'month':
+        final months = docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+          return timestamp != null ? DateFormat('yyyy-MM').format(timestamp) : null;
+        }).whereType<String>().toSet().toList();
+        months.sort((a, b) => b.compareTo(a));
+        return months;
+      case 'year':
+        final years = docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+          return timestamp != null ? DateFormat('yyyy').format(timestamp) : null;
+        }).whereType<String>().toSet().toList();
+        years.sort((a, b) => b.compareTo(a));
+        return years;
+      default:
+        return [];
+    }
+  }
+
+  // Filter docs for the selected period
+  List<QueryDocumentSnapshot> filterDocsForSelectedPeriod(List<QueryDocumentSnapshot> docs) {
+    if (availablePeriods.isEmpty) return docs;
+    final period = availablePeriods[selectedPeriodIndex];
+    switch (selectedPeriod) {
+      case 'hour':
+        // 只保留选中那一天的数据
+        return docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+          return timestamp != null && DateFormat('yyyy-MM-dd').format(timestamp) == period;
+        }).toList();
+      case 'day':
+        return docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+          return timestamp != null && DateFormat('yyyy-MM-dd').format(timestamp) == period;
+        }).toList();
+      case 'week':
+        return docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+          if (timestamp == null) return false;
+          final weekStart = timestamp.subtract(Duration(days: timestamp.weekday - 1));
+          return ('${weekStart.year}-W${getWeekOfYear(weekStart)}') == period;
+        }).toList();
+      case 'month':
+        return docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+          return timestamp != null && DateFormat('yyyy-MM').format(timestamp) == period;
+        }).toList();
+      default:
+        return docs;
+    }
+  }
+
   final typeNames = {
     'fart': '放屁',
     'poop': '拉屎',
@@ -52,6 +133,94 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
     'drink': Color(0xFF66A61E)   // colorblind-friendly
   };
 
+  Future<void> pickDayAndSetIndex(BuildContext context) async {
+    final picked = await showDialog<DateTime>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          content: SizedBox(
+            width: 300,
+            height: 350,
+            child: CalendarDatePicker(
+              initialDate: DateTime.tryParse(availablePeriods[selectedPeriodIndex]) ?? DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime.now(),
+              selectableDayPredicate: (date) {
+                final str = DateFormat('yyyy-MM-dd').format(date);
+                return availablePeriods.contains(str);
+              },
+              onDateChanged: (date) {
+                Navigator.of(context).pop(date);
+              },
+            ),
+          ),
+        );
+      },
+    );
+    if (picked != null) {
+      final pickedStr = DateFormat('yyyy-MM-dd').format(picked);
+      final idx = availablePeriods.indexOf(pickedStr);
+      if (idx != -1) {
+        setState(() => selectedPeriodIndex = idx);
+      } else {
+        setState(() {
+          availablePeriods.insert(0, pickedStr);
+          selectedPeriodIndex = 0;
+        });
+      }
+    }
+  }
+
+  Future<void> pickPeriodAndSetIndex(BuildContext context) async {
+    if (selectedPeriod == 'hour') {
+      await pickDayAndSetIndex(context);
+      return;
+    }
+    final List<String> periods = availablePeriods;
+    String? picked;
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(selectedPeriod == 'week'
+              ? '选择周'
+              : selectedPeriod == 'month'
+                  ? '选择月份'
+                  : '选择年份'),
+          content: SizedBox(
+            width: 300,
+            height: 350,
+            child: ListView.builder(
+              itemCount: periods.length,
+              itemBuilder: (context, i) {
+                return ListTile(
+                  title: Text(periods[i]),
+                  selected: selectedPeriodIndex == i,
+                  onTap: () {
+                    picked = periods[i];
+                    Navigator.of(context).pop();
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+    if (picked != null) {
+      final idx = periods.indexOf(picked!);
+      if (idx != -1) setState(() => selectedPeriodIndex = idx);
+    }
+  }
+
+  int getWeekOfYear(DateTime date) {
+    final firstDayOfYear = DateTime(date.year, 1, 1);
+    final daysOffset = firstDayOfYear.weekday - 1;
+    final firstMonday = firstDayOfYear.subtract(Duration(days: daysOffset));
+    final diff = date.difference(firstMonday).inDays;
+    return (diff / 7).ceil();
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -63,196 +232,473 @@ class _AdvancedEventChartPageState extends State<AdvancedEventChartPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('数据统计分析 📊')),
-      body: Column(
-        children: [
-          const SizedBox(height: 12),
+      body: FutureBuilder<QuerySnapshot>(
+        future: fartRef.get(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("没有数据"));
+          }
 
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: typeNames.keys.map((type) {
-              return FilterChip(
-                label: Text('${typeNames[type]}'),
-                selected: selectedTypes.contains(type),
-                onSelected: (selected) {
-                  setState(() {
-                    if (selected) {
-                      selectedTypes.add(type);
-                    } else {
-                      selectedTypes.remove(type);
-                    }
-                  });
-                },
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 8),
-          DropdownButton<String>(
-            value: selectedPeriod,
-            onChanged: (value) => setState(() => selectedPeriod = value ?? 'day'),
-            items: const [
-              DropdownMenuItem(value: 'minute', child: Text('最近10分钟')),
-              DropdownMenuItem(value: 'hour', child: Text('最近24小时')),
-              DropdownMenuItem(value: 'day', child: Text('最近7天')),
-              DropdownMenuItem(value: 'week', child: Text('最近4周')),
-              DropdownMenuItem(value: 'month', child: Text('最近6个月')),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            children: selectedTypes.map((type) {
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.square, color: typeColors[type], size: 12),
-                  const SizedBox(width: 4),
-                  Text(typeNames[type] ?? type),
+          final docs = snapshot.data!.docs;
+          availablePeriods = getAvailablePeriods(docs);
+          if (selectedPeriodIndex >= availablePeriods.length) selectedPeriodIndex = 0;
+
+          final filteredDocs = filterDocsForSelectedPeriod(docs);
+
+          return Column(
+            children: [
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                children: typeNames.keys.map((type) {
+                  return FilterChip(
+                    label: Text('${typeNames[type]}'),
+                    selected: selectedTypes.contains(type),
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          selectedTypes.add(type);
+                        } else {
+                          selectedTypes.remove(type);
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 8),
+              DropdownButton<String>(
+                value: selectedPeriod,
+                onChanged: (value) => setState(() {
+                  final v = value as String?;
+                  if (v != null && (v == 'hour' || v == 'week' || v == 'month' || v == 'year')) {
+                    selectedPeriod = v;
+                  } else {
+                    selectedPeriod = 'hour';
+                  }
+                  selectedPeriodIndex = 0;
+                }),
+                items: const [
+                  DropdownMenuItem(value: 'hour', child: Text('按天')),
+                  DropdownMenuItem(value: 'week', child: Text('按周')),
+                  DropdownMenuItem(value: 'month', child: Text('按月')),
+                  DropdownMenuItem(value: 'year', child: Text('按年')),
                 ],
-              );
-            }).toList(),
-          ),
-          Expanded(
-            child: FutureBuilder<QuerySnapshot>(
-              future: fartRef.get(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text("没有数据"));
-                }
-
-                final docs = snapshot.data!.docs;
-                final now = DateTime.now();
-                final dateLabels = getDateLabels(now);
-
-                final Map<String, Map<String, int>> dataMap = {
-                  for (var label in dateLabels) label: {for (var type in selectedTypes) type: 0},
-                };
-
-                final Map<String, List<DateTime>> typeTimestamps = {
-                  for (var type in selectedTypes) type: [],
-                };
-
-                for (var doc in docs) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
-                  if (timestamp == null || !selectedTypes.contains(data['type'])) continue;
-
-                  String label;
-                  switch (selectedPeriod) {
-                    case 'minute':
-                      label = DateFormat('HH:mm').format(timestamp);
-                      break;
-                    case 'hour':
-                      final aligned = DateTime(timestamp.year, timestamp.month, timestamp.day, timestamp.hour);
-                      label = DateFormat('yyyy-MM-dd HH:00').format(aligned);
-                      break;
-                    case 'day':
-                      label = DateFormat('MM-dd').format(timestamp);
-                      break;
-                    case 'week':
-                      final weekStart = timestamp.subtract(Duration(days: timestamp.weekday - 1));
-                      label = 'W${DateFormat('yyyy-MM-dd').format(weekStart)}';
-                      break;
-                    case 'month':
-                      label = DateFormat('yyyy-MM').format(timestamp);
-                      break;
-                    default:
-                      label = '';
-                  }
-
-                  if (!dataMap.containsKey(label)) continue;
-
-                  dataMap[label]![data['type']] = (dataMap[label]![data['type']] ?? 0) + 1;
-                  typeTimestamps[data['type']]!.add(timestamp);
-                }
-
-                final Map<String, Map<String, dynamic>> summaryStats = {};
-                for (var type in selectedTypes) {
-                  final times = typeTimestamps[type]!..sort();
-                  final count = times.length;
-                  double avgIntervalMin = 0;
-                  if (count > 1) {
-                    final intervals = [
-                      for (int i = 1; i < times.length; i++)
-                        times[i].difference(times[i - 1]).inMinutes
-                    ];
-                    avgIntervalMin = intervals.reduce((a, b) => a + b) / intervals.length;
-                  }
-                  summaryStats[type] = {
-                    'count': count,
-                    'avgIntervalMin': avgIntervalMin,
-                  };
-                }
-
-                final barGroups = <BarChartGroupData>[];
-
-                for (int i = 0; i < dateLabels.length; i++) {
-                  final label = dateLabels[i];
-                  final rods = <BarChartRodData>[];
-                  int j = 0;
-                  for (var type in selectedTypes) {
-                    final count = (dataMap[label]?[type] ?? 0).toDouble();
-                    rods.add(BarChartRodData(
-                      toY: count,
-                      width: 8,
-                      borderRadius: BorderRadius.circular(2),
-                      color: typeColors[type],
-                    ));
-                    j++;
-                  }
-                  barGroups.add(BarChartGroupData(x: i, barRods: rods, barsSpace: 4));
-                }
-
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: BarChart(
-                    BarChartData(
-                      barGroups: barGroups,
-                      barTouchData: BarTouchData(enabled: false),
-                      titlesData: FlTitlesData(
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            interval: 1,
-                            getTitlesWidget: (value, _) => Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
-                          ),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, _) {
-                              final i = value.toInt();
-                              if (i >= 0 && i < dateLabels.length) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: Text(dateLabels[i], style: const TextStyle(fontSize: 10)),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ),
-                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              if (availablePeriods.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => pickPeriodAndSetIndex(context),
+                        child: Text(selectedPeriod == 'hour'
+                            ? '选择日期'
+                            : selectedPeriod == 'week'
+                                ? '选择周'
+                                : selectedPeriod == 'month'
+                                    ? '选择月份'
+                                    : '选择年份'),
                       ),
-                      gridData: FlGridData(show: true),
-                      borderData: FlBorderData(show: false),
-                      groupsSpace: 16,
-                      alignment: BarChartAlignment.spaceAround,
-                      maxY: barGroups
-                              .expand((g) => g.barRods.map((r) => r.toY))
-                              .fold(0.0, (a, b) => a > b ? a : b) +
-                          1,
-                    ),
+                      const SizedBox(width: 16),
+                      Text(
+                        availablePeriods[selectedPeriodIndex],
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
-          ),
-        ],
+                ),
+              Wrap(
+                spacing: 8,
+                children: selectedTypes.map((type) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.square, color: typeColors[type], size: 12),
+                      const SizedBox(width: 4),
+                      Text(typeNames[type] ?? type),
+                    ],
+                  );
+                }).toList(),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Builder(
+                    builder: (context) {
+                      // 24小时模式下，x轴为0~23小时，y轴为事件数量
+                      List<BarChartGroupData> barGroups;
+                      if (selectedPeriod == 'hour' && availablePeriods.isNotEmpty) {
+                        // 统计每小时数量
+                        final hourCounts = List.generate(24, (_) => {for (var type in selectedTypes) type: 0});
+                        for (var doc in filteredDocs) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+                          if (timestamp == null || !selectedTypes.contains(data['type'])) continue;
+                          hourCounts[timestamp.hour][data['type']] = (hourCounts[timestamp.hour][data['type']] ?? 0) + 1;
+                        }
+                        barGroups = List.generate(24, (i) {
+                          final rods = <BarChartRodData>[];
+                          for (var type in selectedTypes) {
+                            rods.add(BarChartRodData(
+                              toY: (hourCounts[i][type] ?? 0).toDouble(),
+                              width: 8,
+                              borderRadius: BorderRadius.circular(2),
+                              color: typeColors[type],
+                            ));
+                          }
+                          return BarChartGroupData(x: i, barRods: rods, barsSpace: 4);
+                        });
+                      } else {
+                        // 其他模式，保持原有逻辑
+                        final now = DateTime.now();
+                        final dateLabels = getDateLabels(now);
+                        final Map<String, Map<String, int>> dataMap = {
+                          for (var label in dateLabels) label: {for (var type in selectedTypes) type: 0},
+                        };
+                        final Map<String, List<DateTime>> typeTimestamps = {
+                          for (var type in selectedTypes) type: [],
+                        };
+                        for (var doc in filteredDocs) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+                          if (timestamp == null || !selectedTypes.contains(data['type'])) continue;
+                          String label;
+                          switch (selectedPeriod) {
+                            case 'minute':
+                              label = DateFormat('HH:mm').format(timestamp);
+                              break;
+                            case 'hour':
+                              final aligned = DateTime(timestamp.year, timestamp.month, timestamp.day, timestamp.hour);
+                              label = DateFormat('yyyy-MM-dd HH:00').format(aligned);
+                              break;
+                            case 'day':
+                              label = DateFormat('MM-dd').format(timestamp);
+                              break;
+                            case 'week':
+                              final weekStart = timestamp.subtract(Duration(days: timestamp.weekday - 1));
+                              label = 'W${DateFormat('yyyy-MM-dd').format(weekStart)}';
+                              break;
+                            case 'month':
+                              label = DateFormat('yyyy-MM').format(timestamp);
+                              break;
+                            default:
+                              label = '';
+                          }
+                          if (!dataMap.containsKey(label)) continue;
+                          dataMap[label]![data['type']] = (dataMap[label]![data['type']] ?? 0) + 1;
+                          typeTimestamps[data['type']]!.add(timestamp);
+                        }
+                        barGroups = <BarChartGroupData>[];
+                        for (int i = 0; i < dateLabels.length; i++) {
+                          final label = dateLabels[i];
+                          final rods = <BarChartRodData>[];
+                          for (var type in selectedTypes) {
+                            final count = (dataMap[label]?[type] ?? 0).toDouble();
+                            rods.add(BarChartRodData(
+                              toY: count,
+                              width: 8,
+                              borderRadius: BorderRadius.circular(2),
+                              color: typeColors[type],
+                            ));
+                          }
+                          barGroups.add(BarChartGroupData(x: i, barRods: rods, barsSpace: 4));
+                        }
+                      }
+                      // 如果 filteredDocs 为空，显示空图表
+                      if (filteredDocs.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('该日无数据', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                              SizedBox(height: 16),
+                              SizedBox(
+                                height: 200,
+                                child: BarChart(
+                                  BarChartData(
+                                    barGroups: List.generate(24, (i) => BarChartGroupData(x: i, barRods: [])),
+                                    titlesData: FlTitlesData(
+                                      leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                      bottomTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          getTitlesWidget: (value, _) => Padding(
+                                            padding: const EdgeInsets.only(top: 4.0),
+                                            child: Text('${value.toInt()}h', style: const TextStyle(fontSize: 10)),
+                                          ),
+                                        ),
+                                      ),
+                                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    ),
+                                    gridData: FlGridData(show: true),
+                                    borderData: FlBorderData(show: false),
+                                    groupsSpace: 16,
+                                    alignment: BarChartAlignment.spaceAround,
+                                    maxY: 1,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      // 按周模式下，x轴为1~7（周一到周日），y轴为每天事件数量
+                      if (selectedPeriod == 'week' && availablePeriods.isNotEmpty) {
+                        // 统计每周每天数量，确保x=0是周一，x=6是周日
+                        final weekCounts = List.generate(7, (_) => {for (var type in selectedTypes) type: 0});
+                        for (var doc in filteredDocs) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+                          if (timestamp == null || !selectedTypes.contains(data['type'])) continue;
+                          // weekday: 1=Mon, ..., 7=Sun
+                          weekCounts[timestamp.weekday - 1][data['type']] = (weekCounts[timestamp.weekday - 1][data['type']] ?? 0) + 1;
+                        }
+                        barGroups = List.generate(7, (i) {
+                          final rods = <BarChartRodData>[];
+                          for (var type in selectedTypes) {
+                            rods.add(BarChartRodData(
+                              toY: (weekCounts[i][type] ?? 0).toDouble(),
+                              width: 8,
+                              borderRadius: BorderRadius.circular(2),
+                              color: typeColors[type],
+                            ));
+                          }
+                          return BarChartGroupData(x: i, barRods: rods, barsSpace: 4);
+                        });
+                        const weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+                        return BarChart(
+                          BarChartData(
+                            barGroups: barGroups,
+                            barTouchData: BarTouchData(enabled: false),
+                            titlesData: FlTitlesData(
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  interval: 1,
+                                  getTitlesWidget: (value, _) => Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
+                                ),
+                              ),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, _) {
+                                    final i = value.toInt();
+                                    if (i >= 0 && i < 7) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 4.0),
+                                        child: Text('周${weekDays[i]}', style: const TextStyle(fontSize: 10)),
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  },
+                                ),
+                              ),
+                              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            ),
+                            gridData: FlGridData(show: true),
+                            borderData: FlBorderData(show: false),
+                            groupsSpace: 16,
+                            alignment: BarChartAlignment.spaceAround,
+                            maxY: barGroups
+                                    .expand((g) => g.barRods.map((r) => r.toY))
+                                    .fold(0.0, (a, b) => a > b ? a : b) +
+                                1,
+                          ),
+                        );
+                      }
+                      // 按月模式下，x轴为1~5周，y轴为每周事件数量
+                      if (selectedPeriod == 'month' && availablePeriods.isNotEmpty) {
+                        // 统计每月每周数量
+                        final weekCounts = List.generate(5, (_) => {for (var type in selectedTypes) type: 0});
+                        for (var doc in filteredDocs) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+                          if (timestamp == null || !selectedTypes.contains(data['type'])) continue;
+                          // 计算该日期是当月第几周
+                          final firstDayOfMonth = DateTime(timestamp.year, timestamp.month, 1);
+                          final weekOfMonth = ((timestamp.day + firstDayOfMonth.weekday - 2) / 7).floor();
+                          if (weekOfMonth >= 0 && weekOfMonth < 5) {
+                            weekCounts[weekOfMonth][data['type']] = (weekCounts[weekOfMonth][data['type']] ?? 0) + 1;
+                          }
+                        }
+                        barGroups = List.generate(5, (i) {
+                          final rods = <BarChartRodData>[];
+                          for (var type in selectedTypes) {
+                            rods.add(BarChartRodData(
+                              toY: (weekCounts[i][type] ?? 0).toDouble(),
+                              width: 8,
+                              borderRadius: BorderRadius.circular(2),
+                              color: typeColors[type],
+                            ));
+                          }
+                          return BarChartGroupData(x: i, barRods: rods, barsSpace: 4);
+                        });
+                        return BarChart(
+                          BarChartData(
+                            barGroups: barGroups,
+                            barTouchData: BarTouchData(enabled: false),
+                            titlesData: FlTitlesData(
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  interval: 1,
+                                  getTitlesWidget: (value, _) => Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
+                                ),
+                              ),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, _) {
+                                    final i = value.toInt();
+                                    if (i >= 0 && i < 5) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 4.0),
+                                        child: Text('第${i + 1}周', style: const TextStyle(fontSize: 10)),
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  },
+                                ),
+                              ),
+                              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            ),
+                            gridData: FlGridData(show: true),
+                            borderData: FlBorderData(show: false),
+                            groupsSpace: 16,
+                            alignment: BarChartAlignment.spaceAround,
+                            maxY: barGroups
+                                    .expand((g) => g.barRods.map((r) => r.toY))
+                                    .fold(0.0, (a, b) => a > b ? a : b) +
+                                1,
+                          ),
+                        );
+                      }
+                      // 按年模式下，x轴为1~12月，y轴为每月事件数量
+                      if (selectedPeriod == 'year' && availablePeriods.isNotEmpty) {
+                        final monthCounts = List.generate(12, (_) => {for (var type in selectedTypes) type: 0});
+                        for (var doc in filteredDocs) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final timestamp = DateTime.tryParse(data['timestamp'] ?? '');
+                          if (timestamp == null || !selectedTypes.contains(data['type'])) continue;
+                          monthCounts[timestamp.month - 1][data['type']] = (monthCounts[timestamp.month - 1][data['type']] ?? 0) + 1;
+                        }
+                        barGroups = List.generate(12, (i) {
+                          final rods = <BarChartRodData>[];
+                          for (var type in selectedTypes) {
+                            rods.add(BarChartRodData(
+                              toY: (monthCounts[i][type] ?? 0).toDouble(),
+                              width: 8,
+                              borderRadius: BorderRadius.circular(2),
+                              color: typeColors[type],
+                            ));
+                          }
+                          return BarChartGroupData(x: i, barRods: rods, barsSpace: 4);
+                        });
+                        return BarChart(
+                          BarChartData(
+                            barGroups: barGroups,
+                            barTouchData: BarTouchData(enabled: false),
+                            titlesData: FlTitlesData(
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  interval: 1,
+                                  getTitlesWidget: (value, _) => Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
+                                ),
+                              ),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, _) {
+                                    final i = value.toInt();
+                                    if (i >= 0 && i < 12) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 4.0),
+                                        child: Text('${i + 1}月', style: const TextStyle(fontSize: 10)),
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  },
+                                ),
+                              ),
+                              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            ),
+                            gridData: FlGridData(show: true),
+                            borderData: FlBorderData(show: false),
+                            groupsSpace: 16,
+                            alignment: BarChartAlignment.spaceAround,
+                            maxY: barGroups
+                                    .expand((g) => g.barRods.map((r) => r.toY))
+                                    .fold(0.0, (a, b) => a > b ? a : b) +
+                                1,
+                          ),
+                        );
+                      }
+                      return BarChart(
+                        BarChartData(
+                          barGroups: barGroups,
+                          barTouchData: BarTouchData(enabled: false),
+                          titlesData: FlTitlesData(
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                interval: 1,
+                                getTitlesWidget: (value, _) => Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
+                              ),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, _) {
+                                  if (selectedPeriod == 'hour') {
+                                    // 0~23小时
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Text('${value.toInt()}h', style: const TextStyle(fontSize: 10)),
+                                    );
+                                  } else {
+                                    final i = value.toInt();
+                                    final dateLabels = getDateLabels(DateTime.now());
+                                    if (i >= 0 && i < dateLabels.length) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 4.0),
+                                        child: Text(dateLabels[i], style: const TextStyle(fontSize: 10)),
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  }
+                                },
+                              ),
+                            ),
+                            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          ),
+                          gridData: FlGridData(show: true),
+                          borderData: FlBorderData(show: false),
+                          groupsSpace: 16,
+                          alignment: BarChartAlignment.spaceAround,
+                          maxY: barGroups
+                                  .expand((g) => g.barRods.map((r) => r.toY))
+                                  .fold(0.0, (a, b) => a > b ? a : b) +
+                              1,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
