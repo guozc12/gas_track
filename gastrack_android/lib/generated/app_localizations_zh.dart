@@ -323,4 +323,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aiRequest => '请基于上述不同类型的记录频率与间隔，为用户提供健康与生活方式建议。';
+
+  @override
+  String get languageRestartNotice => '切换语言后需要重启App才能生效。';
+
+  @override
+  String get restart => '重启';
 }
