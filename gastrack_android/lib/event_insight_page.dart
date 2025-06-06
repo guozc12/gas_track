@@ -107,7 +107,7 @@ class _EventInsightPageState extends State<EventInsightPage> {
             avgIntervalMin = intervals.reduce((a, b) => a + b) / intervals.length;
           }
           final name = typeNames[type] ?? type;
-          summaryLines.add(AppLocalizations.of(context)!.typeSummary(name, count, avgIntervalMin.toStringAsFixed(1)));
+          summaryLines.add(AppLocalizations.of(context)!.typeSummary(count, avgIntervalMin.toStringAsFixed(1), name));
         });
 
         summaryLines.add('\n' + AppLocalizations.of(context)!.dailyCoverage);
