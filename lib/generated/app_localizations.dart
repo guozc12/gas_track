@@ -733,6 +733,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please provide health and lifestyle advice based on the above frequencies and intervals.'**
   String get aiRequest;
+
+  /// No description provided for @languageRestartNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to restart the app for the language change to take effect.'**
+  String get languageRestartNotice;
+
+  /// No description provided for @restart.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart'**
+  String get restart;
 }
 
 class _AppLocalizationsDelegate

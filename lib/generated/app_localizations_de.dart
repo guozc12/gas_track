@@ -325,4 +325,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get aiRequest =>
       'Bitte gib Gesundheits- und Lifestyle-Tipps basierend auf den obigen Häufigkeiten und Intervallen.';
+
+  @override
+  String get languageRestartNotice =>
+      'You need to restart the app for the language change to take effect.';
+
+  @override
+  String get restart => 'Restart';
 }

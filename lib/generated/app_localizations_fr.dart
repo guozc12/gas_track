@@ -325,4 +325,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get aiRequest =>
       'Veuillez fournir des conseils de santé et de mode de vie basés sur les fréquences et intervalles ci-dessus.';
+
+  @override
+  String get languageRestartNotice =>
+      'You need to restart the app for the language change to take effect.';
+
+  @override
+  String get restart => 'Restart';
 }

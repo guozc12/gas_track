@@ -102,5 +102,7 @@
   "notCovered": "❌",
   "aiNotice": "⚠️ Note: The above statistics may be incomplete due to missing records. GPT, please analyze accordingly.",
   "detailRecords": "Detailed records:",
-  "aiRequest": "Please provide health and lifestyle advice based on the above frequencies and intervals."
+  "aiRequest": "Please provide health and lifestyle advice based on the above frequencies and intervals.",
+  "languageRestartNotice": "You need to restart the app for the language change to take effect.",
+  "restart": "Restart"
 } 

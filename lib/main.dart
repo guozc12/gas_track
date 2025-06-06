@@ -11,6 +11,17 @@ import 'event_insight_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'generated/app_localizations.dart';
+import 'generated/app_localizations_zh.dart';
+import 'generated/app_localizations_en.dart';
+import 'generated/app_localizations_ja.dart';
+import 'generated/app_localizations_es.dart';
+import 'generated/app_localizations_de.dart';
+import 'generated/app_localizations_fr.dart';
+import 'generated/app_localizations_nl.dart';
+import 'generated/app_localizations_ko.dart';
+// 仅在web端有效
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,10 +41,28 @@ class LifeTrackerApp extends StatefulWidget {
 class _LifeTrackerAppState extends State<LifeTrackerApp> {
   Locale? _locale;
 
+  @override
+  void initState() {
+    super.initState();
+    // 读取本地存储的语言
+    final savedLocale = html.window.localStorage['app_locale'];
+    if (savedLocale != null && savedLocale.isNotEmpty) {
+      _locale = Locale(savedLocale);
+    }
+  }
+
   void setLocale(Locale locale) {
-    setState(() {
-      _locale = locale;
-    });
+    final supported = AppLocalizations.supportedLocales.map((l) => l.languageCode).toList();
+    final code = locale.languageCode;
+    if (supported.contains(code)) {
+      setState(() {
+        _locale = Locale(code);
+      });
+    } else {
+      setState(() {
+        _locale = const Locale('en');
+      });
+    }
   }
 
   @override
@@ -375,7 +404,56 @@ class _HomePageState extends State<HomePage> {
           PopupMenuButton<Locale>(
             icon: Icon(Icons.language),
             onSelected: (locale) {
-              if (widget.onLocaleChange != null) widget.onLocaleChange!(locale);
+              // 根据用户选择的语言，创建对应的本地化对象
+              AppLocalizations localizations;
+              switch (locale.languageCode) {
+                case 'zh':
+                  localizations = AppLocalizationsZh();
+                  break;
+                case 'en':
+                  localizations = AppLocalizationsEn();
+                  break;
+                case 'ja':
+                  localizations = AppLocalizationsJa();
+                  break;
+                case 'es':
+                  localizations = AppLocalizationsEs();
+                  break;
+                case 'de':
+                  localizations = AppLocalizationsDe();
+                  break;
+                case 'fr':
+                  localizations = AppLocalizationsFr();
+                  break;
+                case 'nl':
+                  localizations = AppLocalizationsNl();
+                  break;
+                case 'ko':
+                  localizations = AppLocalizationsKo();
+                  break;
+                default:
+                  localizations = AppLocalizationsEn();
+              }
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text(localizations.appTitle),
+                  content: Text(localizations.languageRestartNotice),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(localizations.cancel),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        html.window.localStorage['app_locale'] = locale.languageCode;
+                        html.window.location.reload();
+                      },
+                      child: Text(localizations.restart),
+                    ),
+                  ],
+                ),
+              );
             },
             itemBuilder: (context) => [
               PopupMenuItem(

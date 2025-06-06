@@ -102,5 +102,7 @@
   "notCovered": "❌",
   "aiNotice": "⚠️ 注意：以上统计可能因用户遗漏记录而不完全，GPT 请结合这一点审慎分析。",
   "detailRecords": "详细记录如下：",
-  "aiRequest": "请基于上述不同类型的记录频率与间隔，为用户提供健康与生活方式建议。"
+  "aiRequest": "请基于上述不同类型的记录频率与间隔，为用户提供健康与生活方式建议。",
+  "languageRestartNotice": "切换语言后需要重启App才能生效。",
+  "restart": "重启"
 } 

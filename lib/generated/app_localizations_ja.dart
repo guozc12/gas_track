@@ -323,4 +323,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aiRequest => '上記の頻度と間隔に基づき、健康とライフスタイルのアドバイスをお願いします。';
+
+  @override
+  String get languageRestartNotice =>
+      'You need to restart the app for the language change to take effect.';
+
+  @override
+  String get restart => 'Restart';
 }

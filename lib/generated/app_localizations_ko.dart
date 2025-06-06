@@ -324,4 +324,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get aiRequest => '위 빈도와 간격을 바탕으로 건강 및 라이프스타일 조언을 해주세요.';
+
+  @override
+  String get languageRestartNotice =>
+      'You need to restart the app for the language change to take effect.';
+
+  @override
+  String get restart => 'Restart';
 }

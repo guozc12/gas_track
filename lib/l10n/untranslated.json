@@ -1,1 +1,31 @@
-{}
+{
+  "de": [
+    "languageRestartNotice",
+    "restart"
+  ],
+
+  "es": [
+    "languageRestartNotice",
+    "restart"
+  ],
+
+  "fr": [
+    "languageRestartNotice",
+    "restart"
+  ],
+
+  "ja": [
+    "languageRestartNotice",
+    "restart"
+  ],
+
+  "ko": [
+    "languageRestartNotice",
+    "restart"
+  ],
+
+  "nl": [
+    "languageRestartNotice",
+    "restart"
+  ]
+}
